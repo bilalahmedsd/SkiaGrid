@@ -1,0 +1,319 @@
+<UserControl x:Class="SampleApplicationV2.Views.AllFeaturesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:skia="clr-namespace:SkiaSharpControlV2;assembly=SkiaSharpControlV2">
+    <UserControl.Resources>
+        <Style TargetType="TextBlock" x:Key="Grp">
+            <Setter Property="Foreground" Value="#7FD1B9"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Margin" Value="0,10,0,4"/>
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="#C0C0C0"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Margin" Value="0,2,0,2"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="6,2"/>
+            <Setter Property="Margin" Value="0,2,4,2"/>
+            <Setter Property="FontSize" Value="11"/>
+        </Style>
+        <Style TargetType="TextBlock" x:Key="Lbl">
+            <Setter Property="Foreground" Value="#9AA0B0"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="8">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="330"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="150"/>
+        </Grid.RowDefinitions>
+
+        <!-- ══ header ══ -->
+        <Border Grid.Row="0" Grid.ColumnSpan="2" Background="#0D0D1A" BorderBrush="#333355"
+                BorderThickness="1" Padding="12,8" Margin="0,0,0,8">
+            <StackPanel>
+                <TextBlock Text="All Features — complete API coverage" Foreground="#E6E6E6"
+                           FontSize="15" FontWeight="Bold"/>
+                <TextBlock Foreground="#8A90A0" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,0"
+                           Text="Every panel below drives a real public property, method, event or command of SkiaGridViewV2. The features that had no demo coverage anywhere else in the sample app are all wired up here."/>
+                <TextBlock x:Name="txtDiag" Foreground="#7FD1B9" FontFamily="Consolas" FontSize="11" Margin="0,6,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ══ control panel ══ -->
+        <Border Grid.Row="1" Grid.Column="0" Background="#16162A" BorderBrush="#333355"
+                BorderThickness="1" Padding="10,4,10,10" Margin="0,0,8,0">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+
+                    <TextBlock Text="APPEARANCE &amp; DENSITY" Style="{StaticResource Grp}"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Density" Style="{StaticResource Lbl}" Width="74"/>
+                        <ComboBox x:Name="DensityBox" Width="110" FontSize="11"
+                                  SelectionChanged="Density_Changed">
+                            <ComboBoxItem Content="Compact" IsSelected="True"/>
+                            <ComboBoxItem Content="Normal"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock Text="Font size" Style="{StaticResource Lbl}" Width="74"/>
+                        <Slider x:Name="FontSlider" Minimum="8" Maximum="22" Value="12" Width="150"
+                                IsSnapToTickEnabled="True" TickFrequency="1"
+                                ValueChanged="FontSize_Changed"/>
+                        <TextBlock x:Name="txtFont" Style="{StaticResource Lbl}" Margin="6,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock Text="SKRowHeight" Style="{StaticResource Lbl}" Width="74"/>
+                        <Slider x:Name="RowHSlider" Minimum="0" Maximum="40" Value="0" Width="150"
+                                IsSnapToTickEnabled="True" TickFrequency="1"
+                                ValueChanged="RowHeight_Changed"/>
+                        <TextBlock x:Name="txtRowH" Style="{StaticResource Lbl}" Margin="6,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock Text="HdrHeight" Style="{StaticResource Lbl}" Width="74"/>
+                        <Slider x:Name="HdrHSlider" Minimum="0" Maximum="48" Value="0" Width="150"
+                                IsSnapToTickEnabled="True" TickFrequency="1"
+                                ValueChanged="HdrHeight_Changed"/>
+                        <TextBlock x:Name="txtHdrH" Style="{StaticResource Lbl}" Margin="6,0,0,0"/>
+                    </StackPanel>
+                    <CheckBox x:Name="ChkGridLines" Content="ShowGridLines" IsChecked="True"
+                              Checked="Appearance_Changed" Unchecked="Appearance_Changed"/>
+                    <CheckBox x:Name="ChkAltRows" Content="AlternatingRowBackground" IsChecked="True"
+                              Checked="Appearance_Changed" Unchecked="Appearance_Changed"/>
+                    <CheckBox x:Name="ChkBorderSel" Content="SelectionStyle = Border (vs Fill)"
+                              Checked="Appearance_Changed" Unchecked="Appearance_Changed"/>
+
+                    <TextBlock Text="COLUMN HEADER" Style="{StaticResource Grp}"/>
+                    <CheckBox x:Name="ChkHeaderVisible" Content="ColumnHeaderVisible" IsChecked="True"
+                              Checked="Header_Changed" Unchecked="Header_Changed"/>
+                    <CheckBox x:Name="ChkHeaderTheme" Content="Custom header colours (Background / Foreground / Separator)"
+                              Checked="Header_Changed" Unchecked="Header_Changed"/>
+
+                    <TextBlock Text="COLUMNS" Style="{StaticResource Grp}"/>
+                    <CheckBox x:Name="ChkBrackets" Content="ShowBracketOnNegative on Price" IsChecked="True"
+                              Checked="Columns_Changed" Unchecked="Columns_Changed"/>
+                    <CheckBox x:Name="ChkAcronym" Content="FormatWithAcronym on Views" IsChecked="True"
+                              Checked="Columns_Changed" Unchecked="Columns_Changed"/>
+                    <CheckBox x:Name="ChkNoAggregate" Content="ShowGroupAggregateData = False on Qty"
+                              Checked="Columns_Changed" Unchecked="Columns_Changed"/>
+                    <CheckBox x:Name="ChkDataVisible" Content="DataVisible on Barcode" IsChecked="True"
+                              Checked="Columns_Changed" Unchecked="Columns_Changed"/>
+                    <CheckBox x:Name="ChkHideCategory" Content="Hide the Category column (IsVisible)"
+                              Checked="Columns_Changed" Unchecked="Columns_Changed"/>
+                    <CheckBox x:Name="ChkDisplayHeader" Content="DisplayHeader rename on Name"
+                              Checked="Columns_Changed" Unchecked="Columns_Changed"/>
+
+                    <TextBlock Text="SORTING" Style="{StaticResource Grp}"/>
+                    <CheckBox x:Name="ChkIndicatorOnly" Content="UseCollectionViewSort = False (glyph only)"
+                              Checked="Sorting_Changed" Unchecked="Sorting_Changed"/>
+                    <CheckBox x:Name="ChkTimerSort" Content="SortEvery = 3 s (timer re-sort)"
+                              Checked="Sorting_Changed" Unchecked="Sorting_Changed"/>
+                    <Button Content="ClearSort()" Click="ClearSort_Click"/>
+
+                    <TextBlock Text="FILTERING" Style="{StaticResource Grp}"/>
+                    <WrapPanel>
+                        <Button Content="AddValueFilter Price &gt; 0" Click="FilterValue_Click"/>
+                        <Button Content="AddTextFilter Name = Item 1*" Click="FilterText_Click"/>
+                        <Button Content="AddListFilter Category" Click="FilterList_Click"/>
+                        <Button Content="Clear filters" Click="FilterClear_Click"/>
+                    </WrapPanel>
+
+                    <TextBlock Text="GROUPING &amp; AGGREGATION" Style="{StaticResource Grp}"/>
+                    <WrapPanel>
+                        <Button Content="ApplyGroup(Category) + 6 aggregations" Click="Group_Click"/>
+                        <Button Content="ClearGroup()" Click="GroupClear_Click"/>
+                        <Button Content="ExpandAll()" Click="ExpandAll_Click"/>
+                        <Button Content="CollapseAll()" Click="CollapseAll_Click"/>
+                        <Button Content="ToggleGroup(first, collapse)" Click="ToggleGroup_Click"/>
+                        <Button Content="Read expand state" Click="ReadGroupState_Click"/>
+                    </WrapPanel>
+
+                    <TextBlock Text="TREE / CHILD ROWS (ChildProperty)" Style="{StaticResource Grp}"/>
+                    <WrapPanel>
+                        <Button Content="ExpandAllRows()" Click="ExpandAllRows_Click"/>
+                        <Button Content="CollapseAllRows()" Click="CollapseAllRows_Click"/>
+                        <Button Content="ToggleRow(selected)" Click="ToggleRow_Click"/>
+                        <Button Content="GetExpandedRowItems()" Click="ReadRowState_Click"/>
+                    </WrapPanel>
+
+                    <TextBlock Text="BULK ROW OPERATIONS" Style="{StaticResource Grp}"/>
+                    <CheckBox x:Name="ChkCoalesce" Content="CoalesceRowUpdates (one settle per burst)"
+                              Checked="Coalesce_Changed" Unchecked="Coalesce_Changed"/>
+                    <WrapPanel>
+                        <Button Content="InsertRange(2, 5 rows)" Click="InsertRange_Click"/>
+                        <Button Content="RemoveRange(selected)" Click="RemoveRange_Click"/>
+                        <Button Content="InsertAtViewIndex(0)" Click="InsertAtView_Click"/>
+                        <Button Content="IndexOfInView(selected)" Click="IndexOf_Click"/>
+                        <Button Content="ScrollIntoView(last)" Click="ScrollIntoView_Click"/>
+                    </WrapPanel>
+
+                    <TextBlock Text="SCROLL BARS" Style="{StaticResource Grp}"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="V width" Style="{StaticResource Lbl}" Width="74"/>
+                        <Slider x:Name="VBarSlider" Minimum="0" Maximum="28" Value="0" Width="150"
+                                IsSnapToTickEnabled="True" TickFrequency="1"
+                                ValueChanged="ScrollBars_Changed"/>
+                        <TextBlock x:Name="txtVBar" Style="{StaticResource Lbl}" Margin="6,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock Text="H height" Style="{StaticResource Lbl}" Width="74"/>
+                        <Slider x:Name="HBarSlider" Minimum="0" Maximum="28" Value="0" Width="150"
+                                IsSnapToTickEnabled="True" TickFrequency="1"
+                                ValueChanged="ScrollBars_Changed"/>
+                        <TextBlock x:Name="txtHBar" Style="{StaticResource Lbl}" Margin="6,0,0,0"/>
+                    </StackPanel>
+                    <CheckBox x:Name="ChkDeferScroll" Content="IsDeferredScrollingEnabled"
+                              Checked="Appearance_Changed" Unchecked="Appearance_Changed"/>
+                    <WrapPanel>
+                        <Button Content="ScrollToVerticalOffset(25)" Click="ScrollV_Click"/>
+                        <Button Content="ScrollToHorizontalOffset(400)" Click="ScrollH_Click"/>
+                    </WrapPanel>
+
+                    <TextBlock Text="ROW DRAG (commands, not events)" Style="{StaticResource Grp}"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Mode" Style="{StaticResource Lbl}" Width="74"/>
+                        <ComboBox x:Name="DragBox" Width="110" FontSize="11" SelectionChanged="Drag_Changed">
+                            <ComboBoxItem Content="None" IsSelected="True"/>
+                            <ComboBoxItem Content="Reorder"/>
+                            <ComboBoxItem Content="Notify"/>
+                            <ComboBoxItem Content="DragOut"/>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <TextBlock Text="AUTOMATION (accessibility)" Style="{StaticResource Grp}"/>
+                    <CheckBox x:Name="ChkGridAutomation" Content="IsAutomationEnabled (this grid)" IsChecked="True"
+                              Checked="Automation_Changed" Unchecked="Automation_Changed"/>
+                    <CheckBox x:Name="ChkGlobalAutomation" Content="GlobalAutomationEnabled (whole process)" IsChecked="True"
+                              Checked="Automation_Changed" Unchecked="Automation_Changed"/>
+
+                    <TextBlock Text="EXPORT &amp; DIAGNOSTICS" Style="{StaticResource Grp}"/>
+                    <WrapPanel>
+                        <Button Content="ExportData(All)" Click="ExportAll_Click"/>
+                        <Button Content="ExportData(Selected)" Click="ExportSel_Click"/>
+                        <Button Content="SelectAllRows()" Click="SelectAll_Click"/>
+                        <Button Content="GetAllPercentiles()" Click="Percentiles_Click"/>
+                    </WrapPanel>
+
+                    <TextBlock Text="OPENS THE OTHERWISE-UNREACHABLE WINDOW" Style="{StaticResource Grp}"/>
+                    <Button Content="Open MainWindow (bound column layout persistence)"
+                            Click="OpenMainWindow_Click"/>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- ══ the grid ══ -->
+        <skia:SkiaGridViewV2 x:Name="skiaGrid" Grid.Row="1" Grid.Column="1"
+                             ShowGridLines="True"
+                             GridLinesColor="#333355"
+                             RowBackground="#0F0F1A"
+                             AlternatingRowBackground="#141425"
+                             ForegroundColor="#C0C0C0"
+                             SelectedRowBackground="#1E5A2E"
+                             SelectedRowForeground="#FFE082"
+                             CanUserSelectRows="True"
+                             CanUserSortColumns="True"
+                             CanUserResizeColumns="True"
+                             CanUserReorderColumns="True"
+                             IsTooltipEnabled="True"
+                             SKFontSize="12"
+                             ChildProperty="Details"
+                             VerticalScrollBarVisible="Auto"
+                             HorizontalScrollBarVisible="Auto">
+            <skia:SkiaGridViewV2.Columns>
+                <skia:SKGridViewColumn Name="Id" Header="Id" BindingPath="Id" Width="60"
+                                       ContentAlignment="Right"
+                                       IsExpandableColumnForChildRows="True"
+                                       ExpandIcon="▾" CollapseIcon="▸"/>
+                <skia:SKGridViewColumn Name="Name" Header="Name" BindingPath="Name" Width="100"/>
+                <skia:SKGridViewColumn Name="Category" Header="Category" BindingPath="Category" Width="100"/>
+
+                <!-- Timed single-condition trigger: SKDataTrigger.Duration (flash for 3 s). -->
+                <skia:SKGridViewColumn Name="Price" Header="Price" BindingPath="Price" Width="100"
+                                       ContentAlignment="Right" Format="N2" ShowBracketOnNegative="True">
+                    <skia:SKGridViewColumn.CellTemplate>
+                        <skia:SKCellTemplate>
+                            <skia:SKDataTrigger BindingPath="Price" Operator="LessThan" Value="0" Duration="3">
+                                <skia:SKDataTrigger.Setters>
+                                    <skia:SKSetter Property="Background" Value="#4A1414"/>
+                                    <skia:SKSetter Property="Foreground" Value="#FF6B6B"/>
+                                </skia:SKDataTrigger.Setters>
+                            </skia:SKDataTrigger>
+                        </skia:SKCellTemplate>
+                    </skia:SKGridViewColumn.CellTemplate>
+                </skia:SKGridViewColumn>
+
+                <skia:SKGridViewColumn Name="Qty" Header="Qty" BindingPath="Quantity" Width="80"
+                                       ContentAlignment="Right" Format="N0"/>
+                <skia:SKGridViewColumn Name="Rating" Header="Rating" BindingPath="Rating" Width="70"
+                                       ContentAlignment="Center"/>
+                <skia:SKGridViewColumn Name="Views" Header="Views" BindingPath="Views" Width="90"
+                                       ContentAlignment="Right" FormatWithAcronym="True"/>
+                <skia:SKGridViewColumn Name="Barcode" Header="Barcode" BindingPath="Barcode" Width="90"/>
+                <skia:SKGridViewColumn Name="Supplier" Header="Supplier (Distinct)" BindingPath="SupplierName"
+                                       Width="130" ShowSubTotalOnSort="True"/>
+                <skia:SKGridViewColumn Name="Active" Header="Active" BindingPath="IsActive" Width="60"
+                                       ContentAlignment="Center" IsCheckboxColumn="True"/>
+                <skia:SKGridViewColumn Name="InStock" Header="InStock" BindingPath="InStock" Width="70"
+                                       ContentAlignment="Center" IsCheckboxColumn="True"/>
+                <skia:SKGridViewColumn Name="Created" Header="Created" BindingPath="CreatedAt" Width="100"
+                                       ContentAlignment="Center" Format="dd-MMM-yy"/>
+
+                <!-- Declarative XAML buttons: SKCellTemplate.SkButtons + ImageSize + ContentAlignment -->
+                <skia:SKGridViewColumn Name="Actions" Header="Actions (XAML SkButtons)" Width="150"
+                                       ContentAlignment="Center" CanUserSort="False">
+                    <skia:SKGridViewColumn.CellTemplate>
+                        <skia:SKCellTemplate>
+                            <skia:SKCellTemplate.SkButtons>
+                                <skia:SkButton Name="Edit" Text="Edit" Width="54"
+                                               BackgroundColor="#1F63A8" ForegroundColor="#FFFFFF"
+                                               BorderColor="#2E7CD0"
+                                               HoverBackgroundColor="#2E7CD0" HoverForegroundColor="#FFFFFF"
+                                               ContentAlignment="Center" MarginRight="4"
+                                               TooltipPath="Name"/>
+                                <skia:SkButton Name="Del" Text="Del" Width="46"
+                                               BackgroundColor="#8A2B2B" ForegroundColor="#FFFFFF"
+                                               BorderColor="#B85450"
+                                               HoverBackgroundColor="#B85450" HoverForegroundColor="#FFFFFF"
+                                               ContentAlignment="Center"
+                                               TooltipPath="Description"/>
+                            </skia:SKCellTemplate.SkButtons>
+                        </skia:SKCellTemplate>
+                    </skia:SKGridViewColumn.CellTemplate>
+                </skia:SKGridViewColumn>
+            </skia:SkiaGridViewV2.Columns>
+
+            <!-- Row-level trigger, unconditional setters live alongside -->
+            <skia:SkiaGridViewV2.RowTemplate>
+                <skia:SKRowTemplate>
+                    <skia:SKDataTrigger BindingPath="IsDeleted" Operator="Equals" Value="True">
+                        <skia:SKDataTrigger.Setters>
+                            <skia:SKSetter Property="Foreground" Value="#6B6B6B"/>
+                        </skia:SKDataTrigger.Setters>
+                    </skia:SKDataTrigger>
+                </skia:SKRowTemplate>
+            </skia:SkiaGridViewV2.RowTemplate>
+        </skia:SkiaGridViewV2>
+
+        <!-- ══ event log ══ -->
+        <Border Grid.Row="2" Grid.ColumnSpan="2" Background="#0D0D1A" BorderBrush="#333355"
+                BorderThickness="1" Padding="8,4" Margin="0,8,0,0">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="Event / command log — every callback the grid exposes"
+                           Foreground="#9AA0B0" FontWeight="Bold" FontSize="11" Margin="0,0,0,4"/>
+                <ScrollViewer x:Name="LogScroll" VerticalScrollBarVisibility="Auto">
+                    <TextBlock x:Name="LogText" Foreground="#7FD1B9" FontFamily="Consolas"
+                               FontSize="11" TextWrapping="NoWrap"/>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

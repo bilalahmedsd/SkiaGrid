@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 
 namespace SampleApplicationV2
@@ -10,7 +10,7 @@ namespace SampleApplicationV2
         public DemoWindow()
         {
             InitializeComponent();
-            _tabs = new UIElement[] { tab0, tab1, tab2, tab3, tab4 };
+            _tabs = new UIElement[] { tab0, tab1, tab2, tab3, tab4, tab5, tab6 };
         }
 
         private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)

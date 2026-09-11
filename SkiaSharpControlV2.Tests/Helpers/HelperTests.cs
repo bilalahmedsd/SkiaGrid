@@ -87,7 +87,11 @@ public class HelperTests
     {
         var date = new DateTime(2024, 3, 15);
         var result = Helper.ApplyFormat(typeof(DateTime), date.ToString(), "MM/dd/yyyy");
-        Assert.Contains("03/15/2024", result);
+        // "/" in a .NET custom date format is the CULTURE's date separator, not a literal
+        // slash, and ApplyFormat formats with the current culture. So the expectation has to
+        // be culture-relative too - hard-coding "03/15/2024" only passes where the separator
+        // happens to be "/".
+        Assert.Contains(date.ToString("MM/dd/yyyy"), result);
     }
 
     [Fact]
