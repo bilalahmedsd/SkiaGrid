@@ -19,13 +19,13 @@ jobs:
         dotnet-version: '8.0.x'
 
     - name: Restore Dependencies
-      run: dotnet restore SkiaSharpControls.sln
+      run: dotnet restore SkiaSharpControlV2/SkiaSharpControlV2.csproj
 
     - name: Build Project
-      run: dotnet build SkiaSharpControls.sln --configuration Release --no-restore
+      run: dotnet build SkiaSharpControlV2/SkiaSharpControlV2.csproj --configuration Release --no-restore
 
     - name: Create NuGet Package
-      run: dotnet pack SkiaSharpControls.sln --configuration Release --output ./nupkg
+      run: dotnet pack SkiaSharpControlV2/SkiaSharpControlV2.csproj --configuration Release --output ./nupkg
 
     - name: Upload NuGet Artifact
       uses: actions/upload-artifact@v4
