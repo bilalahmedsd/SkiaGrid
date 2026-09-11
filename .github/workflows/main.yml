@@ -1,13 +1,12 @@
-name: SkiaGrid CI/CD
+name: Build and Release WPF App
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    tags:
+      - 'v*' # Jab bhi aap tag banayein ge (e.g., v1.0.0), yeh chalega
 
 jobs:
-  build:
+  release:
     runs-on: windows-latest
 
     steps:
@@ -22,5 +21,11 @@ jobs:
     - name: Restore Dependencies
       run: dotnet restore SkiaSharpControls.sln
 
-    - name: Build Project
-      run: dotnet build SkiaSharpControls.sln --configuration Release --no-restore
+    - name: Publish WPF App
+      run: dotnet publish SkiaSharpControls.sln --configuration Release --output ./publish
+
+    - name: Upload Release Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: SkiaGrid-Windows-Release
+        path: ./publish/
