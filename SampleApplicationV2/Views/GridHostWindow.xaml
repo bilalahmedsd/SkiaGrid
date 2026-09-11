@@ -1,0 +1,11 @@
+<Window x:Class="SampleApplicationV2.Views.GridHostWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="SkiaGrid Host"
+        Height="500" Width="800"
+        Background="#1A1A2E"
+        UseLayoutRounding="True">
+    <Grid>
+        <ContentControl x:Name="HostContent"/>
+    </Grid>
+</Window>

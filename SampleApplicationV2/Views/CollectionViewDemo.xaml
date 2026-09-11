@@ -1,0 +1,286 @@
+<UserControl x:Class="SampleApplicationV2.Views.CollectionViewDemo"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:skia="clr-namespace:SkiaSharpControlV2;assembly=SkiaSharpControlV2"
+             xmlns:local="clr-namespace:SampleApplicationV2">
+    <UserControl.Resources>
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#4A90D9"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Margin" Value="0,0,0,2"/>
+        </Style>
+        <Style x:Key="PanelStyle" TargetType="Border">
+            <Setter Property="Background" Value="#1A1A2E"/>
+            <Setter Property="BorderBrush" Value="#333355"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="CornerRadius" Value="3"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="Background" Value="#2A2A4A"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#4A4A6A"/>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="#0D0D1A"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#4A4A6A"/>
+            <Setter Property="Padding" Value="3"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="MinWidth" Value="60"/>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Background" Value="#0D0D1A"/>
+            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="Padding" Value="3"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="MinWidth" Value="80"/>
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="5,0"/>
+        </Style>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#C0C0C0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="2,0"/>
+        </Style>
+        <Style TargetType="Label">
+            <Setter Property="Foreground" Value="#C0C0C0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="2,0"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title with logo image -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="8,5">
+            <Image Source="/logop1.png" Width="24" Height="24" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBlock Text="CustomCollectionView — All Features Demo (with image rendering)"
+                       FontWeight="Bold" FontSize="14" Foreground="#1ED760" VerticalAlignment="Center"/>
+            <!-- Launches the dedicated GPS window (opens pre-grouped + pre-sorted so the
+                 grand-totals-at-top + one-subtotal-per-group behavior is visible immediately). -->
+            <Button Content="Open GPS Window" Click="OpenGpsWindow_Click"
+                    Margin="20,0,0,0" Padding="10,3"
+                    ToolTip="Opens a standalone Global Position Summary window that faithfully mirrors the P1 GPS main grid (group by Account, Sum Position/DailyPl/Value, Distinct InstrumentType, Inst column ShowSubTotalOnSort). It opens ALREADY grouped and sorted by Inst — no clicks needed — so grand totals appear once at top and each account group has exactly one subtotal per instrument type."/>
+            <Button Content="UIA Select Row 0" Click="UiaSelectRow0_Click"
+                    Margin="8,0,0,0" Padding="10,3"
+                    ToolTip="Selects Row_0 using ONLY the UIA SelectionItemPattern.Select() (the same call a FlaUI test makes — NO coordinate mouse). Proves a pure-UIA select highlights the row AND pushes into the TwoWay-bound VM SelectedItems synchronously (watch the status bar's Selected count)."/>
+            <Button Content="Toggle Global UIA" Click="ToggleGlobalAutomation_Click"
+                    Margin="8,0,0,0" Padding="10,3"
+                    ToolTip="Flips the process-wide SkiaGridViewV2.GlobalAutomationEnabled master switch (default true). When OFF, NO grid exposes its UIA peer tree regardless of per-grid IsAutomationEnabled — click 'UIA Select Row 0' afterwards and the peer/children are gone. Turn it back ON to restore. Normally set once from app config at startup."/>
+        </StackPanel>
+
+        <!-- Control panels -->
+        <Grid Grid.Row="1" Margin="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Filter Panel -->
+            <Border Grid.Column="0" Style="{StaticResource PanelStyle}">
+                <StackPanel>
+                    <TextBlock Text="FILTERS (3 types)" Style="{StaticResource SectionHeader}"/>
+                    <!-- Text Filter (wildcard) -->
+                    <StackPanel Orientation="Horizontal" Margin="0,3">
+                        <TextBlock Text="Text:" Width="40"/>
+                        <TextBox x:Name="txtTextFilter" Width="100" ToolTip="Wildcard pattern (e.g., Item*)"/>
+                        <Button Content="Apply" Click="TextFilter_Click"/>
+                    </StackPanel>
+                    <!-- Value Filter -->
+                    <StackPanel Orientation="Horizontal" Margin="0,3">
+                        <TextBlock Text="Price:" Width="40"/>
+                        <ComboBox x:Name="cmbValueOp" SelectedIndex="0" Width="50">
+                            <ComboBoxItem Content="&gt;"/>
+                            <ComboBoxItem Content="&lt;"/>
+                            <ComboBoxItem Content="="/>
+                            <ComboBoxItem Content="&lt;&gt;"/>
+                            <ComboBoxItem Content="&gt;="/>
+                            <ComboBoxItem Content="&lt;="/>
+                        </ComboBox>
+                        <TextBox x:Name="txtValueFilter" Text="100" Width="60"/>
+                        <Button Content="Apply" Click="ValueFilter_Click"/>
+                    </StackPanel>
+                    <!-- List Filter -->
+                    <StackPanel Orientation="Horizontal" Margin="0,3">
+                        <TextBlock Text="Cat:" Width="40"/>
+                        <TextBox x:Name="txtListFilter" Text="Category 1,Category 2" Width="120" ToolTip="Comma-separated"/>
+                        <Button Content="Apply" Click="ListFilter_Click"/>
+                    </StackPanel>
+                    <Button Content="Clear All Filters" Click="ClearFilters_Click" HorizontalAlignment="Left" Margin="40,5,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Sort Panel -->
+            <Border Grid.Column="1" Style="{StaticResource PanelStyle}">
+                <StackPanel>
+                    <TextBlock Text="SORT" Style="{StaticResource SectionHeader}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,3">
+                        <ComboBox x:Name="cmbSortColumn" SelectedIndex="1" Width="90">
+                            <ComboBoxItem Content="Name"/>
+                            <ComboBoxItem Content="Price"/>
+                            <ComboBoxItem Content="Quantity"/>
+                            <ComboBoxItem Content="Rating"/>
+                            <ComboBoxItem Content="Category"/>
+                        </ComboBox>
+                        <ComboBox x:Name="cmbSortDir" SelectedIndex="0" Width="70">
+                            <ComboBoxItem Content="Asc"/>
+                            <ComboBoxItem Content="Desc"/>
+                        </ComboBox>
+                        <Button Content="Add Sort" Click="AddSort_Click"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,3">
+                        <Button Content="Clear Sort" Click="ClearSort_Click"/>
+                        <CheckBox x:Name="chkLiveSort" Content="Live Sort" IsChecked="True" Checked="LiveSort_Changed" Unchecked="LiveSort_Changed"/>
+                    </StackPanel>
+                    <Button Content="Demo: PS scenario (sort + LiveSort off)"
+                            Click="SortedInsertDemo_Click"
+                            Margin="0,4,0,0"
+                            ToolTip="Mimics the Position Summary startup scenario: clears the grid, applies Name Asc sort (as a binding-set GridViewColumnSort would), turns Live Sort OFF, then streams 8 scrambled-name rows over 2 seconds. Watch each row land at its alphabetical position, NOT at the bottom — sorted-insert is decoupled from Live Sort."/>
+                </StackPanel>
+            </Border>
+
+            <!-- Group + Aggregation Panel -->
+            <Border Grid.Column="2" Style="{StaticResource PanelStyle}">
+                <StackPanel>
+                    <TextBlock Text="GROUP &amp; ALL 6 AGGREGATIONS" Style="{StaticResource SectionHeader}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,3">
+                        <ComboBox x:Name="cmbGroupColumn" SelectedIndex="0" Width="100">
+                            <ComboBoxItem Content="Category"/>
+                            <ComboBoxItem Content="SupplierName"/>
+                            <ComboBoxItem Content="IsActive"/>
+                        </ComboBox>
+                        <Button Content="Apply" Click="ApplyGroup_Click"/>
+                        <Button Content="Clear" Click="ClearGroup_Click"/>
+                    </StackPanel>
+                    <TextBlock Text="Aggregations on Price: Sum, Avg, Min, Max, Count, Distinct" FontSize="10" Foreground="#888"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,3">
+                        <CheckBox x:Name="chkFilterByGroup" Content="FilterByGroup" Checked="FilterByGroup_Changed" Unchecked="FilterByGroup_Changed"
+                                  ToolTip="Filter operates on group aggregates instead of items"/>
+                        <CheckBox x:Name="chkBottomInsert" Content="Bottom Insert" Checked="BottomInsert_Changed" Unchecked="BottomInsert_Changed"
+                                  ToolTip="AddNewRowAtBottomInGroup"/>
+                    </StackPanel>
+                    <Button Content="Demo: GPS distinct subtotals"
+                            Click="GpsSubtotalDemo_Click"
+                            Margin="0,4,0,0"
+                            ToolTip="Reproduces the P1 Global Position Summary scenario: group by Category (with a Distinct HeaderField on SupplierName), then sort by the Supplier column (ShowSubTotalOnSort). Grand-total rows appear ONCE at the top; each group shows exactly one subtotal per supplier — NOT duplicated at the top+bottom of groups after the first."/>
+                </StackPanel>
+            </Border>
+
+            <!-- Row Operations Panel -->
+            <Border Grid.Column="3" Style="{StaticResource PanelStyle}">
+                <StackPanel>
+                    <TextBlock Text="ROW OPS (via source collection)" Style="{StaticResource SectionHeader}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,3">
+                        <Button Content="+ Add" Click="AddRow_Click"/>
+                        <Button Content="Insert Above" Click="InsertRow_Click"/>
+                        <Button Content="- Remove" Click="RemoveRow_Click"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,3">
+                        <Button Content="▲ Up" Click="MoveUp_Click"/>
+                        <Button Content="▼ Down" Click="MoveDown_Click"/>
+                        <Button Content="Copy Selected" Click="CopySelected_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Grid -->
+        <skia:SkiaGridViewV2 x:Name="skiaGrid" Grid.Row="2" Margin="2"
+                             ItemsSource="{Binding Items}"
+                             SelectedItems="{Binding SelectedItems, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             ShowGridLines="True"
+                             GridLinesColor="#333355"
+                             RowBackground="#0F0F1A"
+                             AlternatingRowBackground="#141425"
+                             ForegroundColor="#C0C0C0"
+                             CanUserSelectRows="True"
+                             CanUserSortColumns="True"
+                             CanUserResizeColumns="True"
+                             CanUserReorderColumns="True"
+                             SKFontSize="13"
+                             SKFontFamily="Segoe UI"
+                             IsTooltipEnabled="True"
+                             SelectedRowBackground="#1E5A2E"
+                             SelectedRowForeground="#FFE082"
+                             IsLiveSorting="{Binding IsLiveSort, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+
+            <!-- Group settings activated programmatically via "Apply Group" button -->
+
+            <skia:SkiaGridViewV2.Columns>
+                <skia:SKGridViewColumn Name="GroupColumn" Header="Group" BindingPath="Category" Width="120" ContentAlignment="Left"/>
+                <skia:SKGridViewColumn Header="Id (Count)" BindingPath="Id" Width="80" ContentAlignment="Center"/>
+                <!-- FIX #1 test: sort direction comes from a BOUND VM property set at
+                     DispatcherPriority.Loaded (simulates restored settings arriving late).
+                     Grid should open sorted by Name Asc with the ▲ glyph. -->
+                <skia:SKGridViewColumn Header="Name" BindingPath="Name" Width="100" ContentAlignment="Left"
+                                       GridViewColumnSort="{Binding DefaultNameSort}"/>
+                <!-- Deliberately narrow so its text clips → hover shows the full value (tooltip demo). -->
+                <skia:SKGridViewColumn Header="Desc (hover me)" BindingPath="Description" Width="70" ContentAlignment="Left"/>
+                <!-- FIX #2 test: transparent cell foreground (#00000000, alpha 0). Text is
+                     invisible normally AND must stay invisible when the row is selected
+                     (before the fix it turned amber = SelectedRowForeground). -->
+                <skia:SKGridViewColumn Header="Transparent FG" BindingPath="SupplierName" Width="110" ContentAlignment="Left">
+                    <skia:SKGridViewColumn.CellTemplate>
+                        <skia:SKCellTemplate>
+                            <skia:SKCellTemplate.Setters>
+                                <skia:SKSetter Property="Foreground" Value="#00000000"/>
+                            </skia:SKCellTemplate.Setters>
+                        </skia:SKCellTemplate>
+                    </skia:SKGridViewColumn.CellTemplate>
+                </skia:SKGridViewColumn>
+                <skia:SKGridViewColumn Header="Price (Sum)" BindingPath="Price" Width="100" ContentAlignment="Right" Format="N2"/>
+                <skia:SKGridViewColumn Header="Qty (Min)" BindingPath="Quantity" Width="90" ContentAlignment="Right" Format="N0"/>
+                <skia:SKGridViewColumn Header="Rating (Max)" BindingPath="Rating" Width="100" ContentAlignment="Center"/>
+                <skia:SKGridViewColumn Header="Discount (Avg)" BindingPath="Discount" Width="110" ContentAlignment="Right" Format="N2"/>
+                <skia:SKGridViewColumn Header="Category" BindingPath="Category" Width="100" ContentAlignment="Left"/>
+                <!-- ShowSubTotalOnSort: with grouping + a Distinct HeaderField on SupplierName,
+                     sorting by this column emits distinct subtotal rows per group (GPS repro).
+                     Grand-total rows must appear ONCE at the top; each group gets exactly one
+                     subtotal per supplier (not duplicated at top+bottom for groups after the 1st). -->
+                <skia:SKGridViewColumn Header="Supplier (Distinct)" BindingPath="SupplierName" Width="140" ContentAlignment="Left"
+                                       ShowSubTotalOnSort="True"/>
+                <skia:SKGridViewColumn Header="Active" BindingPath="IsActive" Width="70" ContentAlignment="Center" IsCheckboxColumn="True"/>
+                <skia:SKGridViewColumn Header="InStock" BindingPath="InStock" Width="80" ContentAlignment="Center" IsCheckboxColumn="True"/>
+                <!-- Logo column removed for now (image-button rendering being investigated). -->
+                <!-- Trend column — demonstrates SKCellTemplate.CustomDraw: 10 red/green boxes per row.
+                     Also demos SKGridViewColumn.TooltipPath: this cell has NO BindingPath (custom-drawn,
+                     no text) yet hovering it shows the row's Name — per-cell tooltip independent of
+                     BindingPath/truncation. -->
+                <skia:SKGridViewColumn Header="Trend (last 10)" Width="130" ContentAlignment="Center" CanUserSort="False"
+                                       TooltipPath="Name">
+                    <skia:SKGridViewColumn.CellTemplate>
+                        <skia:SKCellTemplate CustomDraw="{Binding TrendBoxes}"/>
+                    </skia:SKGridViewColumn.CellTemplate>
+                </skia:SKGridViewColumn>
+                <!-- Action buttons — demonstrates SkButton.IsVisible (Edit hidden when row is inactive, Delete collapses left into its slot) -->
+                <skia:SKGridViewColumn Header="Actions" Width="100" ContentAlignment="Center" CanUserSort="False">
+                    <skia:SKGridViewColumn.CellTemplate>
+                        <skia:SKCellTemplate DrawButton="{Binding ActionButtonFactory}"/>
+                    </skia:SKGridViewColumn.CellTemplate>
+                </skia:SKGridViewColumn>
+            </skia:SkiaGridViewV2.Columns>
+        </skia:SkiaGridViewV2>
+
+        <!-- Status bar -->
+        <Border Grid.Row="3" Background="#0D0D1A" BorderBrush="#333355" BorderThickness="0,1,0,0" Padding="8,4">
+            <TextBlock x:Name="txtStatus" Foreground="#888" FontSize="11"
+                       Text="{Binding Status}"/>
+        </Border>
+    </Grid>
+</UserControl>

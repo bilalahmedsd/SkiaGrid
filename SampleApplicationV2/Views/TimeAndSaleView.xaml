@@ -1,0 +1,97 @@
+<UserControl x:Class="SampleApplicationV2.Views.TimeAndSaleView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:skia="clr-namespace:SkiaSharpControlV2;assembly=SkiaSharpControlV2"
+             xmlns:local="clr-namespace:SampleApplicationV2">
+    <UserControl.Resources>
+        <!-- BindingProxy no longer needed — Freezable inheritance provides DataContext -->
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header with symbol filter -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
+            <TextBlock Text="Time &amp; Sales — Sterling-matched tape (14px rows / 18px header)"
+                       FontWeight="Bold" FontSize="14" VerticalAlignment="Center" Margin="0,0,20,0"/>
+            <TextBlock Text="Symbol:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <!-- Defaults to a single symbol: a Sterling tape is per-symbol, and this grid has no
+                 Symbol column. "ALL" still works — it just interleaves every symbol's prints. -->
+            <ComboBox x:Name="SymbolFilter" Width="100" Margin="2"
+                      SelectionChanged="SymbolFilter_Changed">
+                <ComboBoxItem Content="ALL"/>
+                <ComboBoxItem Content="AAPL" IsSelected="True"/>
+                <ComboBoxItem Content="MSFT"/>
+                <ComboBoxItem Content="GOOGL"/>
+                <ComboBoxItem Content="TSLA"/>
+                <ComboBoxItem Content="NVDA"/>
+            </ComboBox>
+            <TextBlock Text="Speed:" VerticalAlignment="Center" Margin="10,0,5,0"/>
+            <ComboBox x:Name="SpeedSelector" Width="100" Margin="2"
+                      SelectionChanged="Speed_Changed">
+                <ComboBoxItem Content="100ms" Tag="100"/>
+                <ComboBoxItem Content="250ms" Tag="250" IsSelected="True"/>
+                <ComboBoxItem Content="500ms" Tag="500"/>
+                <ComboBoxItem Content="1000ms" Tag="1000"/>
+            </ComboBox>
+            <Button Content="Pause/Resume" Click="PauseResume_Click" Margin="10,0,0,0" Padding="8,4"/>
+            <TextBlock x:Name="TradeCountText" VerticalAlignment="Center" Margin="15,0,0,0" Foreground="Gray"/>
+        </StackPanel>
+
+        <!-- Time & Sales tape, matched to Sterling Trader Pro's T&S window (measured from screenshots):
+               · Density="Compact" — the tape density (font+3 rows / font+7 header). At the control's
+                 default 11 px font that is Sterling's exact 14 px / 18 px; at the 10 px font set below
+                 it scales to 13/17 rather than going out of proportion. That scaling is the point —
+                 no pixel heights are hardcoded here. Compact also happens to be the control default;
+                 stated explicitly so the tape's intent survives a future default change. Compare
+                 GlobalPositionSummaryView, which opts UP to Density="Normal" (font+6 / font+12).
+               · SKFontSize="10" — one notch under the default 11, family left at the control's
+                 Microsoft Sans Serif (Sterling's own tape font).
+               · VerticalScrollBarWidth / HorizontalScrollBarHeight = 10 — thin bars to match the
+                 narrow tape. Both are below the ~17 px system metric on purpose: that only works
+                 because the control lowers the bars' MinWidth/MinHeight too. Every other view
+                 leaves them unset and gets the system width / the built-in 20 px.
+               · NO gridlines and NO row alternation — Sterling's tape is a flat #181818 field.
+               · amber default text, green at-ask, red at-bid (TradeRecord.BidAskColor).
+               · 4 columns only (Time / Price / Last Sz / Mkt) — a Sterling tape is per-symbol, so the
+                 symbol is chosen with the filter above rather than shown as a column. The remaining
+                 TradeRecord fields (Side / Condition / Bid / Ask) are still populated by the simulator.
+             Left as-is elsewhere in the demo: other views set their own font explicitly. -->
+        <skia:SkiaGridViewV2 x:Name="skiaGrid" Grid.Row="1"
+                             ItemsSource="{Binding Trades}"
+                             ShowGridLines="False"
+                             RowBackground="#181818"
+                             ForegroundColor="#FFA953"
+                             Density="Compact"
+                             SKFontSize="10"
+                             VerticalScrollBarWidth="10"
+                             HorizontalScrollBarHeight="10"
+                             CanUserSelectRows="False"
+                             CanUserSortColumns="False"
+                             CanUserResizeColumns="True"
+                             CanUserReorderColumns="True"
+                             IsLiveSorting="False">
+
+            <!-- Row coloring based on trade side (bid/ask) -->
+            <skia:SkiaGridViewV2.RowTemplate>
+                <skia:SKRowTemplate>
+                    <skia:SKRowTemplate.Setters>
+                        <skia:SKSetter Property="Foreground" ValuePath="BidAskColor"/>
+                    </skia:SKRowTemplate.Setters>
+                </skia:SKRowTemplate>
+            </skia:SkiaGridViewV2.RowTemplate>
+
+            <!-- Widths follow Sterling's 199 px tape (measured off its header separators: 57/55/47/32).
+                 Price is widened 55→68 because Sterling's tape was showing a $14 stock at 4 decimals
+                 ("14.2800") while this simulator quotes $100-900 ("886.3800") — at 55 px it ellipsised. -->
+            <skia:SkiaGridViewV2.Columns>
+                <skia:SKGridViewColumn Name="Time"   Header="Time"    BindingPath="Time"   Width="57" ContentAlignment="Left"  Format="HH:mm:ss"/>
+                <skia:SKGridViewColumn Name="Price"  Header="Price"   BindingPath="Price"  Width="68" ContentAlignment="Right" Format="N4"/>
+                <skia:SKGridViewColumn Name="LastSz" Header="Last Sz" BindingPath="Size"   Width="47" ContentAlignment="Right" Format="N0"/>
+                <skia:SKGridViewColumn Name="Mkt"    Header="Mkt"     BindingPath="Market" Width="32" ContentAlignment="Right"/>
+            </skia:SkiaGridViewV2.Columns>
+        </skia:SkiaGridViewV2>
+    </Grid>
+</UserControl>

@@ -1,0 +1,148 @@
+<UserControl x:Class="SampleApplicationV2.Views.TradingMonitorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:skia="clr-namespace:SkiaSharpControlV2;assembly=SkiaSharpControlV2"
+             xmlns:local="clr-namespace:SampleApplicationV2">
+    <UserControl.Resources>
+        <!-- BindingProxy no longer needed — Freezable inheritance provides DataContext -->
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
+            <TextBlock Text="Trading Monitor - Orders, Spread/Complex Orders, Status Triggers"
+                       FontWeight="Bold" FontSize="14" VerticalAlignment="Center" Margin="0,0,20,0"/>
+            <Button Content="Add Order" Click="AddOrder_Click" Margin="2" Padding="8,4"/>
+            <Button Content="Add Spread" Click="AddSpread_Click" Margin="2" Padding="8,4"/>
+            <Button Content="Simulate Fills" Click="SimulateFills_Click" Margin="2" Padding="8,4"/>
+            <Button Content="Filter Open Only" Click="FilterOpen_Click" Margin="2" Padding="8,4"/>
+            <Button Content="Clear Filter" Click="ClearFilter_Click" Margin="2" Padding="8,4"/>
+            <CheckBox x:Name="chkLiveSort" Content="Live Sort" IsChecked="True" VerticalAlignment="Center" Margin="10,0,0,0"
+                      Checked="LiveSort_Changed" Unchecked="LiveSort_Changed" Foreground="White"/>
+            <CheckBox x:Name="chkBorderSelect" Content="Border Selection" VerticalAlignment="Center" Margin="10,0,0,0"
+                      Foreground="White" Checked="SelectionStyle_Changed" Unchecked="SelectionStyle_Changed"/>
+            <Button Content="Expand All Legs" Click="ExpandAllLegs_Click" Margin="2" Padding="8,4"/>
+            <Button Content="Collapse All Legs" Click="CollapseAllLegs_Click" Margin="2" Padding="8,4"/>
+            <TextBlock Text="{Binding LastAction}" Foreground="#888888" VerticalAlignment="Center" Margin="15,0,0,0" FontSize="11"/>
+            <!-- ExpandChanged demo: leg subscriptions follow parent-row expand state -->
+            <TextBlock x:Name="txtLegSubs" Text="Leg subs: 0" Foreground="#4EC9B0" FontSize="11"
+                       VerticalAlignment="Center" Margin="15,0,0,0"/>
+        </StackPanel>
+
+        <!-- Orders grid with status-based conditional styling -->
+        <skia:SkiaGridViewV2 x:Name="skiaGrid" Grid.Row="1"
+                             ItemsSource="{Binding Orders}"
+                             SelectedItems="{Binding SelectedItems, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             ChildProperty="Legs"
+                             ShowGridLines="True"
+                             GridLinesColor="#2A2A2A"
+                             RowBackground="#0D0D1A"
+                             AlternatingRowBackground="#12122A"
+                             ForegroundColor="#C0C0C0"
+                             CanUserSelectRows="True"
+                             CanUserSortColumns="True"
+                             CanUserResizeColumns="True"
+                             CanUserReorderColumns="True"
+                             RetainSelectionOnLFocusLost="True"
+                             SKFontSize="13"
+                             SKFontFamily="Segoe UI"
+                             IsLiveSorting="{Binding IsLiveSort, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             RowClickedCommand="{Binding RowClickedCommand}"
+                             RowDoubleClickedCommand="{Binding RowDoubleClickedCommand}">
+
+            <!-- Row template: color entire row based on status -->
+            <skia:SkiaGridViewV2.RowTemplate>
+                <skia:SKRowTemplate>
+                    <!-- Filled orders: green tint -->
+                    <skia:SKDataTrigger BindingPath="Status" Operator="Equals" Value="Filled">
+                        <skia:SKDataTrigger.Setters>
+                            <skia:SKSetter Property="Background" Value="#0A2A0A"/>
+                        </skia:SKDataTrigger.Setters>
+                    </skia:SKDataTrigger>
+                    <!-- Partially filled: yellow tint -->
+                    <skia:SKDataTrigger BindingPath="Status" Operator="Equals" Value="Part Fill">
+                        <skia:SKDataTrigger.Setters>
+                            <skia:SKSetter Property="Background" Value="#2A2A0A"/>
+                        </skia:SKDataTrigger.Setters>
+                    </skia:SKDataTrigger>
+                    <!-- Cancelled: dim -->
+                    <skia:SKDataTrigger BindingPath="Status" Operator="Equals" Value="Cancelled">
+                        <skia:SKDataTrigger.Setters>
+                            <skia:SKSetter Property="Foreground" Value="#666666"/>
+                        </skia:SKDataTrigger.Setters>
+                    </skia:SKDataTrigger>
+                    <!-- Rejected: red tint -->
+                    <skia:SKDataTrigger BindingPath="Status" Operator="Equals" Value="Rejected">
+                        <skia:SKDataTrigger.Setters>
+                            <skia:SKSetter Property="Background" Value="#2A0A0A"/>
+                            <skia:SKSetter Property="Foreground" Value="#FF6666"/>
+                        </skia:SKDataTrigger.Setters>
+                    </skia:SKDataTrigger>
+                    <!-- Pending Cancel: red border -->
+                    <skia:SKDataTrigger BindingPath="Status" Operator="Equals" Value="Pending Cancel">
+                        <skia:SKDataTrigger.Setters>
+                            <skia:SKSetter Property="BorderColor" Value="#FF4444"/>
+                            <skia:SKSetter Property="Foreground" Value="#FF8888"/>
+                        </skia:SKDataTrigger.Setters>
+                    </skia:SKDataTrigger>
+                    <!-- Spread orders: purple tint -->
+                    <skia:SKDataTrigger BindingPath="Side" Operator="Equals" Value="SPREAD">
+                        <skia:SKDataTrigger.Setters>
+                            <skia:SKSetter Property="Background" Value="#1A0A2A"/>
+                            <skia:SKSetter Property="BorderColor" Value="#6633CC"/>
+                        </skia:SKDataTrigger.Setters>
+                    </skia:SKDataTrigger>
+                </skia:SKRowTemplate>
+            </skia:SkiaGridViewV2.RowTemplate>
+
+            <skia:SkiaGridViewV2.Columns>
+                <!-- Expandable column for spread/complex order legs -->
+                <skia:SKGridViewColumn Header=" " Width="40" ContentAlignment="Center"
+                                       CanUserSort="False" CanUserResize="False" CanUserReorder="False"
+                                       IsExpandableColumnForChildRows="True"/>
+                <skia:SKGridViewColumn Header="Order ID" BindingPath="OrderId" Width="100" ContentAlignment="Left"/>
+                <skia:SKGridViewColumn Header="Time" BindingPath="Time" Width="90" ContentAlignment="Center" Format="HH:mm:ss"/>
+                <skia:SKGridViewColumn Header="Symbol" BindingPath="Symbol" Width="70" ContentAlignment="Left"/>
+                <skia:SKGridViewColumn Header="Side" BindingPath="Side" Width="60" ContentAlignment="Center">
+                    <skia:SKGridViewColumn.CellTemplate>
+                        <skia:SKCellTemplate>
+                            <skia:SKCellTemplate.Setters>
+                                <skia:SKSetter Property="Foreground" ValuePath="SideColor"/>
+                            </skia:SKCellTemplate.Setters>
+                        </skia:SKCellTemplate>
+                    </skia:SKGridViewColumn.CellTemplate>
+                </skia:SKGridViewColumn>
+                <skia:SKGridViewColumn Header="Type" BindingPath="Type" Width="70" ContentAlignment="Center"/>
+                <skia:SKGridViewColumn Header="Price" BindingPath="Price" Width="80" ContentAlignment="Right" Format="N2"/>
+                <skia:SKGridViewColumn Header="Qty" BindingPath="Quantity" Width="70" ContentAlignment="Right" Format="N0"/>
+                <skia:SKGridViewColumn Header="Filled" BindingPath="Filled" Width="70" ContentAlignment="Right" Format="N0"/>
+                <skia:SKGridViewColumn Header="Remain" BindingPath="Remaining" Width="70" ContentAlignment="Right" Format="N0"/>
+                <skia:SKGridViewColumn Header="Avg Px" BindingPath="AvgPrice" Width="80" ContentAlignment="Right" Format="N2"/>
+                <skia:SKGridViewColumn Header="Status" BindingPath="Status" Width="100" ContentAlignment="Center">
+                    <skia:SKGridViewColumn.CellTemplate>
+                        <skia:SKCellTemplate>
+                            <skia:SKCellTemplate.Setters>
+                                <skia:SKSetter Property="Foreground" ValuePath="StatusColor"/>
+                            </skia:SKCellTemplate.Setters>
+                        </skia:SKCellTemplate>
+                    </skia:SKGridViewColumn.CellTemplate>
+                </skia:SKGridViewColumn>
+                <skia:SKGridViewColumn Header="Account" BindingPath="Account" Width="90" ContentAlignment="Left"/>
+                <skia:SKGridViewColumn Header="Route" BindingPath="Route" Width="70" ContentAlignment="Center"/>
+                <!-- Dynamic buttons via DrawButton factory — different buttons per row based on status -->
+                <skia:SKGridViewColumn Header="Actions" Width="90" ContentAlignment="Center" CanUserSort="False">
+                    <skia:SKGridViewColumn.CellTemplate>
+                        <skia:SKCellTemplate DrawButton="{Binding ButtonFactory}"/>
+                    </skia:SKGridViewColumn.CellTemplate>
+                </skia:SKGridViewColumn>
+                <!-- Dot-notation demo: nested Instrument.Exchange and Instrument.Currency -->
+                <skia:SKGridViewColumn Header="Exchange" BindingPath="Instrument.Exchange" Width="80" ContentAlignment="Center"/>
+                <skia:SKGridViewColumn Header="Ccy" BindingPath="Instrument.Currency" Width="50" ContentAlignment="Center"/>
+            </skia:SkiaGridViewV2.Columns>
+        </skia:SkiaGridViewV2>
+    </Grid>
+</UserControl>

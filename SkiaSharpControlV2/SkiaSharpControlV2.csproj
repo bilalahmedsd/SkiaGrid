@@ -1,0 +1,612 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
+
+    <!-- NuGet Package -->
+    <PackageId>SkiaSharpControlV2</PackageId>
+    <Version>2.18.0</Version>
+    <Authors>Bilal Siddiqui</Authors>
+    <Description>High-performance WPF data grid built on SkiaSharp. Sub-5ms rendering for trading applications with grouping, filtering, sorting, conditional styling, timer-based highlighting, ICommand/MVVM support, UI Automation, custom cell drawing, and explicit view-index inserts.</Description>
+    <PackageTags>WPF;DataGrid;SkiaSharp;Trading;HighPerformance;MVVM;Automation</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/LogicielServices/SkiaGrid</PackageProjectUrl>
+    <RepositoryType>git</RepositoryType>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+    <!-- Assembly versioning -->
+    <AssemblyVersion>2.18.0.0</AssemblyVersion>
+    <FileVersion>2.18.0.0</FileVersion>
+    <InformationalVersion>2.18.0</InformationalVersion>
+
+    <!-- Release notes -->
+    <PackageReleaseNotes>
+v2.18.0 (2026-09-10): Row drag. Minor: additive API only — RowDragMode defaults to None, so a grid
+that does not opt in is unchanged.
+
+NEW: RowDragMode="DragOut" — drag a row, or the cell you pressed, OUT of the grid and drop it on
+another window, another control or another application. The grid starts a real WPF DragDrop, so the
+receiver is plain WPF: AllowDrop, DragOver, Drop. The DataObject carries SKRowDragData under
+SKRowDragData.Format ("SkiaGridViewV2.Rows") with the live row objects plus the pressed column and its
+formatted text, and tab-separated text for anything out of process. Nothing moves inside the grid, and
+the grid never removes rows itself — RowDragCompleted reports the effect and the consumer decides.
+
+NEW: RowDragMode="Reorder" moves the dragged rows in the source collection (insertion line + ghosted
+rows while dragging); "Notify" only tracks and reports the drop. Reorder is refused while sorted or
+grouped, or on a fixed-size source — see the read-only CanReorderRows.
+
+NEW: RowDragIndicatorColor, events RowDragStarting (cancelable), RowDropped, RowDragCompleted, and the
+matching RowDroppedCommand / RowDragCompletedCommand.
+
+BEHAVIOUR (only while RowDragMode is not None): pressing a row that is part of a multi-row selection
+now collapses the selection on mouse-UP instead of mouse-down, so a multi-row drag can carry the whole
+block instead of one row. A click without a drag behaves as before, one event later.
+
+552 unit tests (+20).
+
+v2.17.1 (2026-08-28): Fixes a regression introduced in 2.16.1 — an Auto vertical scroll bar never came
+back once it had hidden. Patch, no API change. Upgrade from 2.16.1/2.16.2/2.17.0 is strongly advised.
+
+FIX: grow a grid until every row fits (the bar correctly hides), then shrink it again — the bar stayed
+hidden, permanently. Neither a further resize nor Refresh() recovered it.
+
+Cause: 2.16.1 changed the overflow test to measure the row area as skiaContainer.ActualHeight. That
+container is a vertical StackPanel sized by its only child, the canvas — and the canvas height is
+itself derived from that same value. Once the grid was grown until the rows fitted, the canvas became
+the full content height, so the test compared content against content, got 0, and no later shrink
+could ever make it positive again. The row band is now measured from MainGrid's star row, which the
+Grid sizes from the space remaining and which cannot be fed by its own children.
+
+Both things 2.16.1 and 2.16.2 fixed are preserved: the bar still appears only on genuine overflow (no
+return of the old three-row-early appearance or the empty gutter), and it still never draws over the
+last column.
+
+FIX (UI Automation): a structure change cleared the control's own peer caches but never called
+ResetChildrenCache(), so WPF kept serving the child list it had already returned. Toggling
+ColumnHeaderVisible could leave Header_N in the tree even though the gate added in 2.17.0 excluded
+them — it only appeared to work when an unrelated layout change happened to refresh the cache as a
+side effect.
+
+456 unit tests (+1): a realized window grown then shrunk, asserting the bar's visibility at each step.
+A test that never realizes a window cannot see this defect.
+
+v2.17.0 (2026-08-25): Two new read/notify APIs for column-fitting math, and two UI Automation
+visibility fixes. Minor: additive API only — nothing renders, lays out or scrolls differently.
+
+NEW: VerticalScrollBarActualWidth (double, read-only) — the width the vertical bar currently occupies,
+0 when it is not shown. Covers a VerticalScrollBarWidth override and falls back to the system metric
+for a bar that is visible but has not been through a layout pass yet. Read this instead of hardcoding
+a constant; a hardcoded 16 is wrong (the system metric is 17 at 100% DPI and is theme-dependent).
+
+NEW: VerticalScrollBarVisibilityChanged (Action&lt;bool&gt;, default null) — raised when the vertical
+bar's AUTO visibility flips; the bool is the new state. Fires only on a real change, not per data
+tick, and is raised synchronously inside the scroll-value pass, which every code path runs BEFORE it
+sizes the canvas. So column widths set from this callback are picked up in the SAME layout pass — no
+one-frame lag and no visible jump as the bar comes and goes. An explicit Visible/Hidden raises
+nothing; that is the consumer's own action.
+
+Setting SKGridViewColumn.Width from that callback is supported: it re-enters the scroll-value pass,
+and those nested calls are now dropped instead of recomputing once per column. The outer pass still
+finishes with the new widths.
+
+FIX (UI Automation): the vertical and horizontal scroll bars were unreachable by any UIA client. They
+are real WPF ScrollBars and WPF gives each one a peer, but the grid peer hand-builds its child list
+and never walks its own template — so those peers were parentless orphans that no client could reach
+by descending from the root. They now appear while showing, with ids ScrollBar_Vertical /
+ScrollBar_Horizontal, and are absent while hidden.
+
+FIX (UI Automation): hiding the column-header row left Header_0..Header_N in the tree at their old
+on-screen rectangle, overlapping the first data row. A test asserting the header row is hidden by the
+ABSENCE of Header_N always failed, and one asserting its PRESENCE always passed — both silently
+wrong. The header peers now leave the tree with the header row, in the tree walk and in
+ITableProvider.GetColumnHeaders(), and header visibility is part of the structure-change gate so a
+runtime toggle is not invisible to an attached client.
+
+Automation-visibility only: no rendering, layout or scroll behaviour changed. If a consumer test
+asserted that Header_N is present while the header row is hidden, that assertion was wrong and will
+now fail. 455 unit tests (+9).
+
+v2.16.2 (2026-08-25): Completes the 2.16.1 scroll bar work — the gutter now also clears when the rows
+go away. Patch, no API change.
+
+FIX: when a grid's rows dropped to zero (e.g. a symbol was unsubscribed) the bar disappeared but its
+empty gutter stayed behind. 2.16.1 fixed this ordering in the Loaded and SizeChanged handlers but
+missed three more places that size the canvas before settling the bar's visibility — most importantly
+UpdateTotalRows(), which every data change goes through. Also fixed on the ItemsSource-swap and
+column-reorder paths. Every site now settles scroll values first, then sizes the canvas.
+
+Upgrade from 2.16.1 is a straight fix — nothing to change in consuming code.
+
+v2.16.1 (2026-08-25): Vertical scroll bar fixes — the bar no longer reserves an empty gutter, and no
+longer draws over the last column when it appears. Patch: no public API added, removed or renamed.
+BEHAVIOUR DOES CHANGE for grids using VerticalScrollBarVisible="Auto" (the default) — see below.
+
+FIX (reported by the PO): the grid reserved an empty scroll bar gutter. Auto-visibility measured the
+content as `totalRows + 3.3` rows and compared it against MainGrid.ActualHeight — the WHOLE control,
+including the column-header row and the horizontal bar row. The 3.3-row fudge (~46px at the 14px
+Compact row) existed to compensate for that too-tall viewport, and it over-corrected: the bar turned
+visible before there was any real overflow, leaving an occupied column with a full-length thumb.
+Both sides are now measured against the row band alone. At a 140px band with an 18px header the bar
+used to appear from 8 rows; it now appears from 11 — i.e. only when the rows genuinely overflow.
+
+FIX: the scroll range overshot. Maximum was inflated by the same 3.3 rows, so a grid could scroll
+about three rows past its last row into blank space. Scrolling to Maximum now lands the last row
+flush with the bottom of the band.
+
+FIX: the bar drew OVER the last column when it appeared. The Loaded and SizeChanged handlers sized
+the canvas BEFORE settling the bar's auto-visibility, so a bar that turned visible in that same pass
+was never subtracted from the canvas width — and nothing recomputed it afterwards. Both handlers now
+use the same order the deferred metrics pass already used: scroll values first, then the canvas. A
+window resize is the most common way the bar crosses its threshold, so this was easy to hit.
+
+FIX: a bar that had just been made visible reported ActualWidth 0 (no layout pass had arranged it
+yet), which sized the canvas a full bar-width too wide. The width now falls back to the explicit
+VerticalScrollBarWidth when one is set, otherwise to the system metric.
+
+WHAT TO EXPECT ON UPGRADE: grids on "Auto" that sat just under the overflow threshold lose a scroll
+bar they should never have had, and gain those pixels back for the columns. Grids that genuinely
+overflow are unchanged apart from an exact scroll range. VerticalScrollBarVisible="Visible" is
+untouched — an explicit "always show" still always shows, gutter included; use "Auto" if you want the
+bar to come and go.
+
+Demo: the new "Scroll Bar Gutter" tab in SampleApplicationV2 sweeps the row count across the
+threshold and prints the live measurements (row band, overflow, bar width, scroll range, gutter
+column), including a "Wide columns" toggle for the overlap case. 446 unit tests (+12).
+
+v2.16.0 (2026-08-12): Image buttons (SkButton.ImageSource) now render at a usable size. Contains a
+deliberate VISUAL CHANGE to image buttons only — no API was removed or renamed, and grids without an
+image button are untouched.
+
+FIX: an image button's glyph was drawn far smaller than the space reserved for it, and squashed. The
+destination rect derived a size from the row height and the button width, then drew it into a rect
+4px narrower than that size but only 1px shorter — so the glyph was never square. At the default
+Compact row height (14px at the 11px font) a bolt/alert icon painted 6 x 9 px out of a 12px budget.
+It now paints a SQUARE that fills the row band less 1px above and below: 12 x 12 px on that same row.
+
+FIX: the glyph ignored SkButton.ContentAlignment and was always pinned to the left edge of its slot;
+Center / Right are now honoured, and it is centred vertically in the row band rather than offset from
+the top. A button configured WIDER than the column it sits in (e.g. Width="60" in a 40px column) now
+centres inside the visible column instead of pushing the glyph toward — or past — the column edge.
+
+FIX: images are drawn with linear + mipmap sampling instead of the default nearest-neighbour. Icons
+are authored larger than the row band they land in (a 40px source at 12px), and the old path dropped
+pixels on that downscale, breaking up thin glyph strokes.
+
+NEW: SkButton.ImageSize (double, default 0 = auto, i.e. the behavior above). Set it only to pin the
+glyph SMALLER than the row allows — a request is still clamped to the row height and the button's
+slot, because a glyph taller than the row is overpainted by the next row.
+
+  &lt;skia:SkButton Name="Bolt" Width="40" ImageSource="{...}" ContentAlignment="Center" ImageSize="10" /&gt;
+
+WHAT TO EXPECT ON UPGRADE: every existing image button gets bigger (roughly double the width at
+Compact row heights), square, and aligned per its ContentAlignment. If a consumer relied on the old
+left-pinned position, set ContentAlignment="Left"; to hold a smaller glyph, set ImageSize.
+434 unit tests (+13).
+
+v2.15.0 (2026-08-10): Scroll bar thickness is now settable. Purely additive — both new properties
+default to 0, which means "keep exactly what you had", so upgrading changes nothing visually.
+
+NEW: VerticalScrollBarWidth (double, default 0) — width of the vertical scroll bar in px. 0 keeps
+WPF's own width, i.e. the system metric (~17px), which is what every grid rendered before this.
+
+NEW: HorizontalScrollBarHeight (double, default 0) — height of the horizontal scroll bar in px. 0
+keeps the built-in 20px the control has always used.
+
+  &lt;skia:SkiaGridViewV2 VerticalScrollBarWidth="10" HorizontalScrollBarHeight="10" /&gt;
+
+Both apply at load and at runtime, and setting either back to 0 restores its default. Values BELOW the
+~17px system metric do take effect: the control lowers each bar's MinWidth / MinHeight along with its
+Width / Height, because WPF's default ScrollBar style pins those minimums to the system metric and
+would otherwise clamp a thinner value silently. Both properties also re-run the coalesced grid-metrics
+recalculation added in 2.14.0, since the canvas width and the horizontal viewport are both computed as
+"available width minus the vertical bar" — a thinner bar hands those pixels back to the grid.
+
+Only bar THICKNESS is configurable. The other dimension is layout-driven (the vertical bar spans the
+header + canvas rows, the horizontal bar spans the canvas column), so there is nothing to set there.
+
+Demo: TimeAndSaleView runs the tape with 10px bars. 421 unit tests (+7).
+
+v2.14.0 (2026-08-05): Appearance defaults matched to Sterling Trader Pro + density/height/header APIs
++ a runtime-recalculation bug fix. READ THE BREAKING VISUAL CHANGE BELOW — this release deliberately
+changes how every existing grid LOOKS. No public API was removed or renamed; nothing needs recompiling.
+
+BREAKING VISUAL CHANGE (deliberate, measured pixel-for-pixel against Sterling Trader Pro):
+- SKFontFamily default "Arial" -&gt; "Microsoft Sans Serif"; SKFontSize default 12 -&gt; 11. At the same
+  9px digit height Arial 12 is ~12% wider than the reference terminal's face.
+- Row height was a hardcoded SKFontSize + 4; it is now SKFontSize + the Density padding, default
+  Compact = +3 (14px at the 11px font). Column header height was SKFontSize + 10; now + the Density
+  header padding, default Compact = +7 (18px).
+- Column header background #3F3F3F -&gt; #343434, separator #000000 -&gt; #1E1E1E with a new 1px rule
+  under the whole header band (BorderThickness 1,0,0,0 -&gt; 1,0,0,1), header text White -&gt; #E6E6E6
+  and now vertically centred. Row / alternating-row backgrounds (#181818 / #0C0C0C) already matched
+  the reference terminal and are unchanged.
+- TO KEEP THE PRE-2.14 LOOK, set per grid:
+  SKFontFamily="Arial" SKFontSize="12" SKRowHeight="16" SKColumnHeaderHeight="22"
+  ColumnHeaderBackground="#FF3F3F3F" ColumnHeaderForeground="White" ColumnHeaderSeparatorColor="#000000"
+- NOTE for positions / account / portfolio grids: the reference terminal renders those at 17px rows /
+  23px header, which is Density="Normal" — NOT the new Compact default. Set Density="Normal" on them
+  or they render at tape density.
+
+NEW: Density (SKGridDensity Normal | Compact, default Compact) — the intended way to set row and
+header height. Both are DERIVED from SKFontSize, so a grid keeps its proportions when the font
+changes: Compact = font+3 rows / font+7 header, Normal = font+6 / font+12. Prefer this over pixel
+heights, which stop tracking the font.
+
+NEW: SKRowHeight / SKColumnHeaderHeight (double, default 0 = derive from font + density) — exact-pixel
+escape hatches that override Density. They also replace the reflection workaround consumers needed
+while the row height lived only on the internal GridAppearanceConfig; drop any such workaround, it now
+fights the DP.
+
+NEW: ColumnHeaderBackground / ColumnHeaderForeground / ColumnHeaderSeparatorColor (hex string, default
+null = the built-in #343434 / #E6E6E6 / #1E1E1E). A per-column BackColor still wins, and an active
+filter still paints its header #0072C6. Changing one after load rebuilds the header columns.
+
+FIX (behavior): a runtime SKFontSize change never recomputed the grid area. The DP callback set the
+font but called none of UpdateSkiaGrid (canvas extent = TotalRows * RowHeight), UpdateScrollValues
+(both scrollbar ranges and auto-visibility derive from row height) or InvalidateVisual — so rows drew
+at the new height into an area sized for the old one, the last rows could not be scrolled to, and
+nothing repainted until an unrelated event forced it. Present in every release before this one. All
+seven metric properties (SKFontSize, SKFontFamily, SKFontStyle, Density, SKRowHeight,
+SKColumnHeaderHeight, ColumnHeaderVisible) now funnel through one coalesced recalculation deferred to
+DispatcherPriority.Loaded, so it runs after the layout pass that a header-height change depends on.
+
+FIX (behavior): column-header text used WPF's inherited font unless the consumer explicitly ASSIGNED
+SKFontSize / SKFontFamily. The DataGrid font was only synced inside the DP callbacks, so a grid
+relying on the defaults drew headers in Segoe UI 12 while its rows used the Skia font. Loaded now
+syncs it too.
+
+FIX (visual): column-header cells were content-sized while the grid row reserved the configured
+height, leaving a strip of window background under the headers once the header font shrank.
+DataListView.ColumnHeaderHeight is now pinned, which also makes the UIA ColumnHeaderHeight read
+accurate.
+
+FIX (visual): cell text is now vertically centred at any row height. The baseline was y + fontSize,
+which silently assumed row height == fontSize + 4; surplus or deficit height is now split evenly above
+and below the glyphs. At the old fontSize + 4 geometry the baseline is byte-identical, so this is a
+no-op for anyone who pins the pre-2.14 metrics.
+
+Demo: TimeAndSaleView rebuilt as a Sterling-matched tape (Density="Compact", 4 columns, no gridlines,
+flat row background, amber / green-at-ask / red-at-bid palette, single-letter Mkt codes);
+GlobalPositionSummaryView shows the Density="Normal" opt-out.
+
+407 unit tests (+16): density derivation and precedence, override-clears-back-to-density,
+order-independence of font/density, and the text-baseline contract.
+
+v2.13.0 (2026-08-04): Expand/collapse notification + state API — for consumers that subscribe market
+data per visible row and want to unsubscribe collapsed rows. All additive and default-off; a grid that
+does not subscribe pays nothing (payload is only materialized when a listener exists).
+- NEW event SkiaGridViewV2.ExpandChanged (EventHandler&lt;SkExpandChangedEventArgs&gt;) + NEW
+  ExpandChangedCommand DP (default null). Raised on the UI thread AFTER the row count/scroll settle,
+  for BOTH grouped mode (group header) and tree / ChildProperty mode (parent row).
+- NEW SkExpandChangedEventArgs: IsExpanded, Reason, GroupName (grouped), ParentItem (tree),
+  AffectedItems (exactly the data rows that became visible/hidden — group data rows, or the parent's
+  children; header/subtotal wrappers never included), IsBulk.
+- NEW enum SkExpandChangeReason: UserToggle (glyph click), Api (ToggleGroup/ToggleRow), ExpandAll,
+  CollapseAll. ExpandAll/CollapseAll raise ONE bulk notification (GroupName/ParentItem null), not one
+  per group. ToggleGroup/ToggleRow notify only when the state actually changes.
+- NEW read APIs: IsGroupExpanded(groupName), GetGroupExpandStates(), IsRowExpanded(item),
+  GetExpandedRowItems(), GetVisibleDataItems() — use the last one to re-sync subscriptions after a
+  data refresh changes which rows exist.
+- NEW tree-mode programmatic toggles (previously glyph-click only): ToggleRow(item, isExpand),
+  ExpandAllRows(), CollapseAllRows(). No-ops in grouped mode (use ToggleGroup/ExpandAll/CollapseAll);
+  they only mark rows that actually have children.
+- Demo: GroupedGridDemo + TradingMonitorView show a live simulated subscription set driven by
+  ExpandChanged (grouped and tree paths).
+- 380 unit tests (+19).
+
+v2.12.0 (2026-07-29): High-frequency data-pipeline perf pass + additive APIs (P1 Trading Monitor
+review Q1-Q8). All additive and default-off / default-preserving unless noted; existing consumers
+are unchanged.
+- CollectionView Reset de-dup (FLAGGED behavior change): a source Move/Replace/Reset used to raise
+  TWO CollectionChanged(Reset) events (the branch + Refresh()), causing two full re-flattens per
+  source Reset. Now exactly one Reset is raised. Idempotent for any correct INotifyCollectionChanged
+  consumer; ~2x off the per-Reset cost.
+- Refresh() fast path: when no filter, sort, or grouping is active, Refresh() mirrors the source into
+  the view directly, skipping per-item filter evaluation, comparer build, and the group pass.
+  (Diagnostics-only delta: the per-row Counter.FilterEvaluations no longer ticks on a no-filter refresh.)
+- Sort comparer: resolves a compiled, boxing-free Comparison&lt;T&gt; (Comparer&lt;TProp&gt;.Default)
+  once per (field, runtime type) instead of a reflection+box per comparison. Ordering is unchanged
+  (mixed runtime types fall back to the prior path).
+- NEW UseCollectionViewSort DP (default true): when false, a column's GridViewColumnSort still renders
+  the ▲/▼ header glyph but installs NO CollectionView sort — for consumers that sort their own source
+  and only want the indicator. SortChanged / SortChangedCommand still fire.
+- NEW SkiaGridViewV2.InsertRange(index, items) / RemoveRange(items): bulk row mutations that raise a
+  single Add/Remove and splice K rows in one pass when no sort/group/filter is active; degrade to
+  per-item (sorted/filtered placement preserved) otherwise.
+- Incremental splice reach: single- and multi-item Add/Remove now splice in place in tree mode
+  (ChildProperty set) as long as no row is expanded (flat index == view index); previously any
+  ChildProperty forced a full re-flatten.
+- Renderer: row-level RowTemplate setters/triggers are resolved once per row instead of once per
+  visible column (rendered output identical); dotted ValuePath segments are split once and cached.
+- NEW CoalesceRowUpdates DP (default false): when true, a burst of incremental splices collapses the
+  TotalRows/scroll settle to one Background-priority dispatcher post. Visible-column-width sum is now
+  memoized (invalidated on column rebuild / visibility / width / drag-resize).
+- Diagnostics: NEW GridMetrics.PercentilesEnabled (default false) + GetPercentiles/GetAllPercentiles
+  and a MetricPercentiles record expose approximate p50/p95/p99 (bounded fixed-bucket histogram).
+  GetSnapshot()/MetricEntrySnapshot are unchanged.
+- 360 unit tests (+31).
+
+v2.11.0 (2026-07-28): Added SkiaGridViewV2.GlobalAutomationEnabled (static, default true) — a process-wide master switch to enable/disable UIA automation for ALL grid instances from one place (e.g. set once from app config at startup). When false, no grid exposes its UIA peer tree regardless of the per-grid IsAutomationEnabled; when true, the per-grid IsAutomationEnabled applies (default true). Additive and default-true: existing behavior is unchanged.
+
+v2.10.0 (2026-07-27): UIA automation — row selection is now drivable end-to-end;
+plus Refresh() hardening.
+- UIA SelectionItemPattern Select/AddToSelection/RemoveFromSelection on a row peer now
+  route through the same path as a real left-click (UI-thread marshaled), so the
+  TwoWay-bound SelectedItems/SelectedItem updates synchronously and dependent
+  ICommand.CanExecute re-queries.
+- Raises UIA ElementSelected / ElementAddedToSelection / ElementRemovedFromSelection (row)
+  + SelectionInvalidated (grid) on every selection path (mouse, keyboard, SelectAll, UIA),
+  change-gated.
+- Row peer implements IInvokeProvider to open the row's context menu via UIA.
+- BoundingRectangle returns Rect.Empty before layout (was an incorrect local rect) and is
+  correct + stable once laid out.
+- Off-thread UIA state-mutating calls are Dispatcher-marshaled.
+- Refresh() resets its re-entrancy guard in a finally block (self-heals if a repaint throws).
+Additive: existing cell-value reads, row counts, and header behavior are unchanged.
+
+v2.9.0 (2026-07-17): Grouping subtotal fix + new option.
+- Fix: with a distinct-column subtotal + sort, the grand-total rows were emitted inside
+  the per-group loop, so for the 2nd and later groups the subtotal appeared twice (at both
+  the top and bottom of the group). Grand totals now emit exactly once at the top, and each
+  group shows exactly one subtotal.
+- New opt-in SKGroupDefinition.ShowSubtotalsWhenCollapsed (default false): when true,
+  collapsing a group keeps its subtotal rows visible (and Collapse-All keeps the top grand
+  totals) while only the detail rows hide. Additive and default-off, so existing behavior
+  is unchanged.
+
+v2.8.0 (2026-07-17): Added opt-in custom cell/button tooltips. New SkButton.TooltipPath
+(row-property) and SkButton.TooltipProvider (Func&lt;object,string?&gt;) show a per-button,
+per-row tooltip on icon/text-less buttons; multiple buttons in one cell each show their
+own tooltip. New SKGridViewColumn.TooltipPath shows a per-cell tooltip resolved from a
+row property, independent of BindingPath/truncation. Resolution precedence: hovered button
+(Provider then Path) -&gt; column TooltipPath -&gt; existing truncated-bound-text tooltip.
+All require grid IsTooltipEnabled=true. Fully additive and default-null: when unset,
+behavior is unchanged. No render-path allocations (resolved on hover-change only).
+
+v2.7.13 — Fixes: binding-set default sort + transparent foreground on selected rows:
+- Default sort passed via a BOUND GridViewColumnSort (e.g. restored/persisted
+  column settings) now applies at window open. GridColumnManager.Column_PropertyChanged
+  previously bailed at its col==null guard BEFORE the sort handler, so a bound sort
+  that resolved before the WPF header column was realized was silently dropped.
+  Sort is now handled first, independent of the WPF column (it only needs the
+  CollectionView + BindingPath); the header sort glyph is set best-effort when the
+  column exists. Literal-XAML and code-behind sort paths are unchanged.
+- Selected-row text now honors a fully-transparent cell foreground instead of
+  forcing it to the selected-row text color (white). A transparent foreground means
+  "hide this text" and is preserved through selection; any visible/unset foreground
+  still uses the selected-row text color for contrast. Applied to text cells,
+  checkbox cells, and the ItemStatus color resolvers so automation-reported color
+  matches the drawn pixels.
+
+v2.7.12 — Per-button hover color:
+- New SkButton.HoverBackgroundColor and HoverForegroundColor DPs (hex). When set,
+  the button renders in these colors while the pointer is over it, then reverts.
+  Default null on both → no hover effect (opt-in per button). Works with static
+  buttons, SkButtons collections, and factory-built buttons; flat + grouped.
+- Hover state is per row (a shared/template button highlights only the row under
+  the pointer). Reuses the existing MouseMove + ButtonDetails hit-test. Repaints
+  only when the hovered button changes AND the old or new button actually defines
+  a hover color — so grids without hover colors never repaint on hover; cleared
+  on MouseLeave. Additive API only.
+
+v2.7.11 — Configurable selected-row colors:
+- New SelectedRowBackground DP (hex) — selected-row fill color. Default null →
+  the built-in blue (#0072C6). In SelectionStyle=Border mode this same color is
+  used as the row's outline color.
+- New SelectedRowForeground DP (hex) — selected-row text color. Default null →
+  white. Applies in SelectionStyle=Fill mode only (Border mode does not recolor
+  text).
+- Both are runtime-changeable and re-applied on Loaded (so a value bound before
+  the renderer exists still lands). Leaving them unset preserves the exact prior
+  look — no behavior change for existing consumers. Setters are _disposed-guarded
+  (same crash-safety as the other color setters).
+
+v2.7.10 — Opt-in per-cell hover tooltip:
+- New IsTooltipEnabled DP (default false → no cost / no behavior change when off).
+  When true, hovering a cell whose text is ellipsis-truncated shows the full value
+  in a tooltip; cells that fit show nothing. Also fixes selection loss when a bound
+  SelectedItems collection instance is swapped at runtime (OnSelectedItemsChanged
+  now re-points the renderer + selection manager at the new collection).
+- Implementation is hover-gated (work only on cell-to-cell transitions, never per
+  mouse-move pixel), never calls InvalidateVisual (tooltip is a separate WPF popup,
+  the canvas does not repaint), and is feed-independent. Truncation is detected on
+  demand with the same width budget the renderer uses (column width - 10) and the
+  data font. Works on any column whose content is clipped; flat + grouped.
+
+v2.7.9 — Scroll-axis automation settle-raise + incremental collection-change flatten:
+M1 (choppy vertical scroll with UIA listeners attached):
+- Vertical scroll no longer raises StructureChanged per scroll tick. 2.7.8's
+  per-tick (shape-gated) raise re-armed continuously under sustained scrolling
+  (~2 Hz raise train); with any session UIA listener each raise triggered WPF's
+  UpdateSubtree walk — measured p95 97.7 ms per scroll call vs 2.0 ms without
+  listeners (62.6% of the dispatcher in the walk at 30k rows). Now a settle
+  timer raises ONCE ~1 s after scrolling stops, through the existing shape gate
+  (scroll-away-and-back raises nothing). Genuine structure changes (membership,
+  columns, grouping) still raise immediately via the coalesced data path —
+  eventual tree state for event-driven clients is unchanged.
+- NotifyStructureChanged additionally gates on ListenerExists(StructureChanged):
+  listener-free sessions skip even the shape-tuple bookkeeping.
+M2 (grid unusable at ~85k rows while ingesting):
+- Granular single-item Add/Remove now splice the flat row-model list in place
+  (flat ungrouped mode) instead of re-flattening all N rows per event. The CV's
+  CollectionChanged raises now carry the view index (NewStartingIndex /
+  OldStartingIndex); the grid verifies count + item identity and falls back to
+  the full flatten on any mismatch. Previously the O(N)+N-allocation rebuild ran
+  on EVERY source event — measured 90.8% of the dispatcher (46.0 s / 50.7 s) at
+  70k rows with the feed active, per-tick flatten 200-250 ms ≥ the 250 ms drain
+  interval (dispatcher saturation).
+- FlattenRowItems reuses RowModel instances across rebuilds (reference-keyed
+  pool, swap-and-clear — zero steady-state allocations). Kills the measured
+  247 MB/s allocation rate / ~343 ms-per-second GC pauses on Reset-driven
+  rebuilds. Result list is pre-sized. Behavior identical: same items, order,
+  flags; nothing keys on RowModel identity.
+- Consumer note: at flood rates, granular adds are now far cheaper than
+  ReplaceAll Resets — app-side drains can raise their bulk-Reset threshold.
+
+v2.7.8 — Virtualize the UI Automation peer tree (large-grid freeze with UIA listeners):
+- GetChildrenCore now exposes only rows intersecting the viewport (± 5 overscan),
+  not every row. Previously a 30k-row grid realized 30k row peers (and ~400k cell
+  peers) per client tree walk — with any UIA listener attached (screen reader,
+  Accessibility Insights, ambient event hooks) a menu-open Expand() measured 6.3 s
+  at 30k rows / 13.4 s at 60k, linear in row count, plus a +500 MB working-set
+  climb from per-walk peer allocation churn. Off-screen rows remain reachable on
+  demand via IGridProvider.GetItem(row, col) and ScrollIntoView — same semantics
+  as WPF's own virtualized DataGrid.
+- Cell peers are cached per row peer instead of re-allocated on every walk.
+  Peers read data live at query time, so cached peers never serve stale values.
+- AutomationDataProvider.VisibleColumns is memoized (was a fresh LINQ
+  Where/OrderBy/ToList per access — a hot frame in the freeze trace), invalidated
+  on data drains and column visibility / order / rebuild changes.
+- StructureChanged is coalesced: raised only when the exposed tree shape (row
+  count, column count, viewport range) actually changed, at most once per 500 ms.
+  Previously raised unconditionally on every 250 ms data drain tick (4×/sec),
+  re-triggering full client subtree re-walks even when only cell values changed.
+- Scrolling now raises a (coalesced) structure notification, since the virtualized
+  tree's exposed row set changes with the viewport.
+- NEW IsAutomationEnabled DP (default true): per-grid automation kill-switch.
+  false = no peer for fresh grids; already-created peers expose an empty subtree
+  and stop raising events (WPF caches peers per element — they cannot be
+  un-created). Runtime-togglable both ways.
+- CONSUMER NOTE: QA tooling that enumerated ALL rows from the UIA tree in one walk
+  must now scroll-and-query (ScrollIntoView / GetItem) like against a virtualized
+  WPF DataGrid. Screen readers are unaffected.
+
+v2.7.7 — Fix sleep/resume native crash in color setters (sibling of v2.7.5):
+- All six SkiaRenderer color setters (SetForeground, SetRowBackgroundColor,
+  SetGridLinesColor, SetAlternatingRowBackground, SetGroupRowBackgroundColor,
+  SetGroupFontColor) now carry the _disposed guard the v2.7.5 fix added to the
+  font path. Without it, WPF re-firing Loaded on a disposed grid (observed on
+  system sleep/resume in multi-window apps: dispose during teardown, Loaded
+  re-broadcast on the resumed dispatcher) re-ran the appearance chain and died
+  at the first unguarded native call — sk_paint_set_color on a freed SKPaint
+  (AccessViolation, uncatchable in .NET 8, process-fatal). The v2.7.5 guards
+  moved the crash from the font setter to the color setter; this closes the
+  rest of the chain.
+- ItemStatus color resolution (ResolveCellColors / ResolveRowColors) also
+  guarded: automation clients hold peer references and can query ItemStatus
+  after dispose — reading .Color off a freed paint is the same AV class.
+- Fixed a v2.7.5 regression: ButtonRenderer captured SymbolFont/UniCodeFont
+  references at construction; UpdateFont's new dispose-and-recreate left it
+  holding DISPOSED fonts after a runtime font change → next button text draw
+  would AV. ButtonRenderer.UpdateFonts() re-points it at the new instances
+  before the old ones are disposed.
+- NOTE for consumers: a disposed grid instance that gets re-Loaded no longer
+  crashes the process, but it stays blank (zombie). If a window re-shows a
+  grid after its Dispose() ran, re-create the control instead of re-attaching.
+
+v2.7.6 — Cold-open perf: stop the LayoutUpdated header-walk storm:
+- DataListView_LayoutUpdated ran a full header visual-tree walk
+  (FindVisualChildren) + per-header click-handler swaps on EVERY LayoutUpdated
+  fire. LayoutUpdated is a tree-global, high-frequency signal, so during the
+  cold open of a large book this fired hundreds of times (~297 walks measured)
+  and was the #1 UI-thread frame — blocking first paint ~1.5 s. The previous
+  isLayoutUpdating guard did nothing (it reset synchronously within one call).
+- Now gated behind a dirty flag set only on STRUCTURAL column changes (initial
+  build, add/remove, reorder, visibility toggle). The walk runs once per change
+  instead of per layout pass; all other LayoutUpdated fires are a single bool
+  check. Flag is cleared only after headers are actually found, preserving the
+  "headers realized asynchronously after a column change" timing so header
+  click/sort never silently breaks. Also removes the per-fire delegate-allocation
+  churn (~350 allocs/fire). Helps steady-state too — LayoutUpdated fires during
+  normal operation, not only cold open.
+- NOTE: this addresses the header-walk hot path only. Data-row virtualization
+  (full-set realize on first arrange) is a separate item and is unaffected here.
+
+v2.7.5 — Fix process-fatal native crash in font setup (Event 1026):
+- SkiaRenderer.UpdateFont() previously mutated UniCodeFont.Size in place. If the
+  font's native handle had been freed — renderer Disposed then re-entered via a
+  repeated WPF Loaded (tab switch / window re-parent), or a cross-thread Skia
+  race in multi-window apps — the assignment crashed the whole process with a
+  native AccessViolation in sk_font_set_size (a Corrupted State Exception, not
+  catchable, logged as .NET Runtime Event 1026). UpdateFont now recreates BOTH
+  fonts (fresh valid native handles) and disposes the old ones — this also fixes
+  a pre-existing SymbolFont leak (it was reassigned without disposing the old).
+- Added a _disposed guard on SetFontSize / SetFontFamily / SetFontStyle /
+  UpdateFont / Draw so a paint or appearance-config call that arrives after
+  Dispose() no longer touches freed handles.
+- Dispose() is now idempotent. A second Dispose() previously decremented the
+  live-instance refcount twice, prematurely clearing the process-wide
+  SKPaintCache / SKTriggerStateCache while other grids were still live.
+
+v2.7.4 — Column header bounds skip hidden columns:
+- AutomationDataProvider.GetColumnHeaderBounds now sums ActualWidth of only
+  VISIBLE preceding columns (DisplayIndex order) when computing a header's
+  screen X. WPF DataGridColumn.ActualWidth keeps the configured width even
+  when Visibility=Collapsed, so the previous naive sum counted hidden columns
+  too — Accessibility Insights reported header bounds shifted right by the
+  width of every hidden column to its left. Symptom: after "View -&gt; Settings
+  -&gt; uncheck a column -&gt; OK", every following header's bounding rectangle
+  pointed to empty grid area instead of the actual on-screen header.
+- Pairs with v2.7.3's automation cache refresh: 2.7.3 made the right peers
+  appear in the UIA tree on visibility toggle; 2.7.4 makes their bounds match
+  the on-screen positions.
+
+v2.7.3 — Automation cache refresh on runtime column visibility / reorder:
+- IsVisible toggled on a column at runtime (e.g. "View -&gt; Settings -&gt; check column
+  -&gt; OK") now invalidates the SkiaGridViewV2AutomationPeer header / row cache
+  and raises StructureChanged. Previously the column appeared on screen but its
+  AutomationId was missing from the UIA tree until the window was closed and
+  reopened (peer rebuilt from scratch on OnCreateAutomationPeer).
+- Column DisplayIndex changes (programmatic reorder) now invalidate the same
+  cache so the UIA child ordering matches the visual ordering.
+
+v2.7.0 — New public API + UI Automation hardening:
+NEW:
+- SKCellTemplate.CustomDraw (Action&lt;SkCellDrawContext&gt;): full-cell custom rendering
+  with hard canvas clipping to the cell rect; replaces default text drawing.
+  Use for sparklines, trend boxes, progress bars, mini-charts.
+- SkButton.IsVisible (bool DP): per-button visibility. When false, the button is
+  skipped AND its layout slot collapses so the next visible button shifts left.
+- SkiaGridViewV2.InsertAtViewIndex(viewIndex, item): inserts at exact visual row
+  position, bypassing active sort and filter for that single insert.
+- SkiaGridViewV2.IndexOfInView(item) / ScrollIntoView(item): locate / scroll to a
+  row in the view (returns -1 if filtered out or in a collapsed group).
+- SkiaGridViewV2.VisibleItemCount / FilterCount / GroupCount: status/diagnostics.
+- SkiaGridViewV2.ApplyGroup(propertyName, IEnumerable&lt;SKGroupField&gt;): one-call
+  group + aggregations.
+- SkiaGridViewV2.ClearSort(): programmatic sort reset.
+- 3-state header-click sort cycle: None -&gt; Asc -&gt; Desc -&gt; None.
+
+UI AUTOMATION:
+- ItemStatus on cells and rows exposes resolved colors as CSS-standard hex
+  ("BG=#RRGGBB;FG=#RRGGBB;BR=#RRGGBB"). Reflects the full 6-step style cascade +
+  selection overlay.
+- SkiaGridHeaderPeer reports real screen bounds — AI / Inspect can now hit-test
+  individual column headers (was reporting Rect.Empty, falling back to the grid).
+- Row / cell IsOffscreen uses pure local coordinates — works in any window state,
+  not just maximized.
+
+FIXES:
+- Selection HashSet moved to per-CellRenderer instance — fixes selected-row flicker
+  when multiple grids are open in different windows.
+- SKPaintCache / SKTriggerStateCache.Clear() refcounted — closing one grid no
+  longer invalidates paints held by other live grids.
+- Last column not rendering when scrolled to the end — viewport math now handles
+  the partial-first-column offset and the boundary equality case.
+- Checkbox click firing on deleted row — CheckboxDetails and ButtonDetails are
+  cleared at the start of every paint; click handler reads row from itemsource
+  by index, not from the (possibly stale) dictionary key.
+- Sorted-insert decoupled from IsLiveSort: appended rows land at sort position
+  even when IsLiveSort=false. IsLiveSort now only gates property-mutation reorder.
+- source.Insert(N, item) with sort active honors the user's index when N is in
+  the middle (preserves blank-row-for-editing patterns).
+- FilterByGroup DP now propagates to the CollectionView via PropertyChangedCallback
+  (was a value holder only).
+
+INTERNAL:
+- CustomCollectionView and Group/Row types are internal (configure via grid DPs).
+- 314 unit tests.
+    </PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp.Views.WPF" Version="3.116.1" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.2" />
+  </ItemGroup>
+
+
+</Project>

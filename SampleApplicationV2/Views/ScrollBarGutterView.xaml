@@ -1,0 +1,98 @@
+<UserControl x:Class="SampleApplicationV2.Views.ScrollBarGutterView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:skia="clr-namespace:SkiaSharpControlV2;assembly=SkiaSharpControlV2">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,10">
+            <TextBlock Text="Scroll bar gutter" FontSize="16" FontWeight="Bold" Foreground="#E6E6E6"/>
+            <TextBlock TextWrapping="Wrap" Foreground="#9AA0B0" Margin="0,4,0,0"
+                       Text="Drag the row count across the threshold. The bar must appear only when the rows genuinely overflow the row band — and while it is collapsed it must give every pixel back to the canvas (Reserved gutter = 0). The magenta strip is the reserved gutter made visible."/>
+        </StackPanel>
+
+        <!-- Controls -->
+        <Border Grid.Row="1" Background="#16162A" BorderBrush="#333355" BorderThickness="1" Padding="10" Margin="0,0,0,10">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Rows:" Foreground="#C0C0C0" VerticalAlignment="Center" Width="60"/>
+                    <Slider x:Name="RowSlider" Width="320" Minimum="0" Maximum="40" Value="8"
+                            IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center"
+                            ValueChanged="RowSlider_ValueChanged"/>
+                    <TextBlock x:Name="RowCountText" Foreground="#E6E6E6" VerticalAlignment="Center"
+                               Margin="10,0,0,0" Width="70" FontFamily="Consolas"/>
+                    <Button Content="5"   Click="Preset_Click" Tag="5"   Margin="4,0,0,0" Padding="10,3"/>
+                    <Button Content="Fill exactly" Click="FillExactly_Click" Margin="4,0,0,0" Padding="10,3"/>
+                    <Button Content="+1 row" Click="OverflowByOne_Click" Margin="4,0,0,0" Padding="10,3"/>
+                    <Button Content="40"  Click="Preset_Click" Tag="40"  Margin="4,0,0,0" Padding="10,3"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                    <TextBlock Text="Vertical:" Foreground="#C0C0C0" VerticalAlignment="Center" Width="60"/>
+                    <ComboBox x:Name="VerticalMode" Width="110" SelectionChanged="VerticalMode_Changed">
+                        <ComboBoxItem Content="Auto" IsSelected="True"/>
+                        <ComboBoxItem Content="Visible"/>
+                        <ComboBoxItem Content="Hidden"/>
+                    </ComboBox>
+                    <TextBlock Text="Horizontal:" Foreground="#C0C0C0" VerticalAlignment="Center" Width="80" Margin="20,0,0,0"/>
+                    <ComboBox x:Name="HorizontalMode" Width="110" SelectionChanged="HorizontalMode_Changed">
+                        <ComboBoxItem Content="Auto" IsSelected="True"/>
+                        <ComboBoxItem Content="Visible"/>
+                        <ComboBoxItem Content="Hidden"/>
+                    </ComboBox>
+                    <CheckBox x:Name="WideColumns" Content="Wide columns (columns &gt; grid width)"
+                              Foreground="#C0C0C0" VerticalAlignment="Center" Margin="20,0,0,0"
+                              Checked="WideColumns_Changed" Unchecked="WideColumns_Changed"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                    <TextBlock Foreground="#9AA0B0" VerticalAlignment="Center"
+                               Text="Switching back to Auto at runtime used to do nothing — the bar stayed frozen. Tick &quot;Wide columns&quot; to test whether the bar overlaps the last column when it appears."/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Grid + live readout -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Magenta backdrop: any pixel of it showing to the right of the columns IS the
+                 reserved gutter. With the bar collapsed the canvas should cover it completely. -->
+            <Border Grid.Column="0" Background="#FF00AA" BorderBrush="#555577" BorderThickness="1"
+                    VerticalAlignment="Top" HorizontalAlignment="Left">
+                <skia:SkiaGridViewV2 x:Name="skiaGrid"
+                                     Width="300" Height="200"
+                                     ItemsSource="{Binding}"
+                                     Background="#181818"
+                                     RowBackground="#181818"
+                                     AlternatingRowBackground="#0C0C0C"
+                                     ForegroundColor="#DCDCDC"
+                                     CanUserSelectRows="True"
+                                     VerticalScrollBarVisible="Auto"
+                                     HorizontalScrollBarVisible="Auto">
+                    <skia:SkiaGridViewV2.Columns>
+                        <skia:SKGridViewColumn Header="#"      BindingPath="Index"  Width="50"  ContentAlignment="Right"/>
+                        <skia:SKGridViewColumn Header="Symbol" BindingPath="Symbol" Width="110" ContentAlignment="Left"/>
+                        <skia:SKGridViewColumn Header="Price"  BindingPath="Price"  Width="110" ContentAlignment="Right" Format="F2"/>
+                    </skia:SkiaGridViewV2.Columns>
+                </skia:SkiaGridViewV2>
+            </Border>
+
+            <Border Grid.Column="1" Background="#16162A" BorderBrush="#333355" BorderThickness="1"
+                    Padding="12" Margin="12,0,0,0" VerticalAlignment="Top">
+                <StackPanel>
+                    <TextBlock Text="Live measurements" FontWeight="Bold" Foreground="#E6E6E6" Margin="0,0,0,6"/>
+                    <TextBlock x:Name="Readout" FontFamily="Consolas" FontSize="12" Foreground="#C0C0C0"/>
+                    <TextBlock x:Name="Verdict" FontFamily="Consolas" FontSize="12" FontWeight="Bold" Margin="0,8,0,0"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

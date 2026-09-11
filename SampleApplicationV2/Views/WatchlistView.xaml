@@ -1,0 +1,266 @@
+<UserControl x:Class="SampleApplicationV2.Views.WatchlistView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:skia="clr-namespace:SkiaSharpControlV2;assembly=SkiaSharpControlV2"
+             xmlns:local="clr-namespace:SampleApplicationV2">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
+            <TextBlock Text="Watchlist - Live Quotes, Highlighting Modes"
+                       FontWeight="Bold" FontSize="14" VerticalAlignment="Center" Margin="0,0,20,0"/>
+            <Button Content="Filter Tech" Click="FilterSector_Click" Margin="2" Padding="8,4"/>
+            <Button Content="Clear Filter" Click="ClearFilter_Click" Margin="2" Padding="8,4"/>
+            <TextBlock Text="Symbol:" Foreground="#888" VerticalAlignment="Center" Margin="10,0,3,0"/>
+            <TextBox x:Name="txtSymbolFilter" Width="80" Background="#0D0D1A" Foreground="White" BorderBrush="#4A4A6A" VerticalAlignment="Center"
+                     ToolTip="Wildcard pattern, e.g., A* or *SFT*"/>
+            <Button Content="Text Filter" Click="SymbolTextFilter_Click" Margin="2" Padding="8,4"/>
+            <CheckBox x:Name="chkTimerSort" Content="Timer Sort (5s)" VerticalAlignment="Center" Margin="10,0,0,0"
+                      Checked="TimerSort_Changed" Unchecked="TimerSort_Changed" Foreground="White"/>
+            <CheckBox x:Name="chkLiveSort" Content="Live Sort" IsChecked="True" VerticalAlignment="Center" Margin="10,0,0,0"
+                      Checked="LiveSort_Changed" Unchecked="LiveSort_Changed" Foreground="White"/>
+        </StackPanel>
+
+        <!-- Highlight mode toggles — bound to ViewModel for pure XAML trigger switching -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5,0,5,5">
+            <TextBlock Text="Highlight:" Foreground="#888" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <CheckBox Content="Row Highlight" IsChecked="{Binding IsRowHighlight, UpdateSourceTrigger=PropertyChanged}"
+                      Foreground="White" VerticalAlignment="Center" Margin="0,0,15,0"/>
+            <CheckBox Content="Timer (3s)" IsChecked="{Binding IsTimerHighlight, UpdateSourceTrigger=PropertyChanged}"
+                      Foreground="White" VerticalAlignment="Center" Margin="0,0,15,0"/>
+            <CheckBox x:Name="chkBorderSelect" Content="Border Selection" VerticalAlignment="Center" Margin="0,0,15,0"
+                      Foreground="White" Checked="SelectionStyle_Changed" Unchecked="SelectionStyle_Changed"/>
+            <TextBlock Foreground="#4A90D9" VerticalAlignment="Center" FontSize="11">
+                <Run Text="Row="/>
+                <Run Text="{Binding IsRowHighlight, Mode=OneWay}"/>
+                <Run Text=" Timer="/>
+                <Run Text="{Binding IsTimerHighlight, Mode=OneWay}"/>
+            </TextBlock>
+        </StackPanel>
+
+        <skia:SkiaGridViewV2 x:Name="skiaGrid" Grid.Row="2"
+                             ItemsSource="{Binding Quotes}"
+                             SelectedItems="{Binding SelectedItems, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             ShowGridLines="True"
+                             GridLinesColor="#ffffff"
+                             RowBackground="#0F0F1A"
+                             AlternatingRowBackground="#141425"
+                             ForegroundColor="#C0C0C0"
+                             CanUserSelectRows="True"
+                             CanUserSortColumns="True"
+                             CanUserResizeColumns="True"
+                             CanUserReorderColumns="True"
+                             RetainSelectionOnLFocusLost="True"
+                             SKFontSize="13"
+                             SKFontFamily="Segoe UI"
+                             IsLiveSorting="{Binding IsLiveSort, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             SortEvery="{Binding SortEvery, UpdateSourceTrigger=PropertyChanged}">
+
+            <!--
+                All 4 highlight modes live in XAML simultaneously.
+                ViewModel booleans (IsRowHighlight, IsTimerHighlight) control which triggers fire.
+                First-match-wins ensures only the active mode's trigger applies per row.
+            -->
+
+            <skia:SkiaGridViewV2.RowTemplate>
+                <skia:SKRowTemplate>
+
+                    <!-- ═══ ROW TIMER UP: IsRowHighlight=True, IsTimerHighlight=True, Change>0 ═══ -->
+                    <skia:SKMultiTrigger Duration="3">
+                        <skia:SKMultiTrigger.Conditions>
+                            <skia:SKCondition Binding="{Binding IsRowHighlight}" Operator="Equals" Value="True"/>
+                            <skia:SKCondition Binding="{Binding IsTimerHighlight}" Operator="Equals" Value="True"/>
+                            <skia:SKCondition BindingPath="Change" Operator="GreaterThan" Value="0"/>
+                        </skia:SKMultiTrigger.Conditions>
+                        <skia:SKMultiTrigger.Setters>
+                            <skia:SKSetter Property="Background" Value="#0A3A0A"/>
+                            <skia:SKSetter Property="BorderColor" Value="#1ED760"/>
+                        </skia:SKMultiTrigger.Setters>
+                    </skia:SKMultiTrigger>
+
+                    <!-- ═══ ROW TIMER DOWN: IsRowHighlight=True, IsTimerHighlight=True, Change<0 ═══ -->
+                    <skia:SKMultiTrigger Duration="3">
+                        <skia:SKMultiTrigger.Conditions>
+                            <skia:SKCondition Binding="{Binding IsRowHighlight}" Operator="Equals" Value="True"/>
+                            <skia:SKCondition Binding="{Binding IsTimerHighlight}" Operator="Equals" Value="True"/>
+                            <skia:SKCondition BindingPath="Change" Operator="LessThan" Value="0"/>
+                        </skia:SKMultiTrigger.Conditions>
+                        <skia:SKMultiTrigger.Setters>
+                            <skia:SKSetter Property="Background" Value="#3A0A0A"/>
+                            <skia:SKSetter Property="BorderColor" Value="#FF4444"/>
+                        </skia:SKMultiTrigger.Setters>
+                    </skia:SKMultiTrigger>
+
+                    <!-- ═══ ROW PERSISTENT UP: IsRowHighlight=True, IsTimerHighlight=False, Change>0 ═══ -->
+                    <skia:SKMultiTrigger>
+                        <skia:SKMultiTrigger.Conditions>
+                            <skia:SKCondition Binding="{Binding IsRowHighlight}" Operator="Equals" Value="True"/>
+                            <skia:SKCondition Binding="{Binding IsTimerHighlight}" Operator="Equals" Value="False"/>
+                            <skia:SKCondition BindingPath="Change" Operator="GreaterThan" Value="0"/>
+                        </skia:SKMultiTrigger.Conditions>
+                        <skia:SKMultiTrigger.Setters>
+                            <skia:SKSetter Property="Background" Value="#0A3A0A"/>
+                            <skia:SKSetter Property="BorderColor" Value="#1ED760"/>
+                        </skia:SKMultiTrigger.Setters>
+                    </skia:SKMultiTrigger>
+
+                    <!-- ═══ ROW PERSISTENT DOWN: IsRowHighlight=True, IsTimerHighlight=False, Change<0 ═══ -->
+                    <skia:SKMultiTrigger>
+                        <skia:SKMultiTrigger.Conditions>
+                            <skia:SKCondition Binding="{Binding IsRowHighlight}" Operator="Equals" Value="True"/>
+                            <skia:SKCondition Binding="{Binding IsTimerHighlight}" Operator="Equals" Value="False"/>
+                            <skia:SKCondition BindingPath="Change" Operator="LessThan" Value="0"/>
+                        </skia:SKMultiTrigger.Conditions>
+                        <skia:SKMultiTrigger.Setters>
+                            <skia:SKSetter Property="Background" Value="#3A0A0A"/>
+                            <skia:SKSetter Property="BorderColor" Value="#FF4444"/>
+                        </skia:SKMultiTrigger.Setters>
+                    </skia:SKMultiTrigger>
+
+                    <!-- ═══ FALLBACK: base foreground (when Cell modes active, no row background) ═══ -->
+                    <!--<skia:SKDataTrigger BindingPath="Change" Operator="GreaterThan" Value="0">
+                        <skia:SKDataTrigger.Setters>
+                            <skia:SKSetter Property="Foreground" Value="#00CC00"/>
+                        </skia:SKDataTrigger.Setters>
+                    </skia:SKDataTrigger>
+                    <skia:SKDataTrigger BindingPath="Change" Operator="LessThan" Value="0">
+                        <skia:SKDataTrigger.Setters>
+                            <skia:SKSetter Property="Foreground" Value="#FF4444"/>
+                        </skia:SKDataTrigger.Setters>
+                    </skia:SKDataTrigger>-->
+
+                </skia:SKRowTemplate>
+            </skia:SkiaGridViewV2.RowTemplate>
+
+            <skia:SkiaGridViewV2.Columns>
+                <skia:SKGridViewColumn Header="Symbol" BindingPath="Symbol" Width="80" ContentAlignment="Left"/>
+
+                <!-- LAST column: cell-level triggers controlled by ViewModel -->
+                <skia:SKGridViewColumn Header="Last" BindingPath="Last" Width="90" ContentAlignment="Right" Format="N2">
+                    <skia:SKGridViewColumn.CellTemplate>
+                        <skia:SKCellTemplate>
+                            <skia:SKCellTemplate.Setters>
+                                <skia:SKSetter Property="Foreground" ValuePath="LastColor"/>
+                            </skia:SKCellTemplate.Setters>
+
+                            <!-- CELL TIMER: IsRowHighlight=False, IsTimerHighlight=True -->
+                            <skia:SKMultiTrigger Duration="3">
+                                <skia:SKMultiTrigger.Conditions>
+                                    <skia:SKCondition Binding="{Binding IsRowHighlight}" Operator="Equals" Value="False"/>
+                                    <skia:SKCondition Binding="{Binding IsTimerHighlight}" Operator="Equals" Value="True"/>
+                                    <skia:SKCondition BindingPath="Last" Operator="GreaterThan" Value="0"/>
+                                </skia:SKMultiTrigger.Conditions>
+                                <skia:SKMultiTrigger.Setters>
+                                    <skia:SKSetter Property="Background" Value="#0A3A0A"/>
+                                    <skia:SKSetter Property="BorderColor" Value="#1ED760"/>
+                                </skia:SKMultiTrigger.Setters>
+                            </skia:SKMultiTrigger>
+
+                            <!-- CELL PERSISTENT: IsRowHighlight=False, IsTimerHighlight=False -->
+                            <skia:SKMultiTrigger>
+                                <skia:SKMultiTrigger.Conditions>
+                                    <skia:SKCondition Binding="{Binding IsRowHighlight}" Operator="Equals" Value="False"/>
+                                    <skia:SKCondition Binding="{Binding IsTimerHighlight}" Operator="Equals" Value="False"/>
+                                    <skia:SKCondition BindingPath="Last" Operator="GreaterThan" Value="0"/>
+                                </skia:SKMultiTrigger.Conditions>
+                                <skia:SKMultiTrigger.Setters>
+                                    <skia:SKSetter Property="Background" Value="#0A3A0A"/>
+                                    <skia:SKSetter Property="BorderColor" Value="#1ED760"/>
+                                </skia:SKMultiTrigger.Setters>
+                            </skia:SKMultiTrigger>
+
+                        </skia:SKCellTemplate>
+                    </skia:SKGridViewColumn.CellTemplate>
+                </skia:SKGridViewColumn>
+
+                <!-- CHG column: cell-level triggers for both positive and negative -->
+                <skia:SKGridViewColumn Header="Chg" BindingPath="Change" Width="80" ContentAlignment="Right" Format="N2">
+                    <skia:SKGridViewColumn.CellTemplate>
+                        <skia:SKCellTemplate>
+                            <skia:SKCellTemplate.Setters>
+                                <skia:SKSetter Property="Foreground" ValuePath="ChangeColor"/>
+                            </skia:SKCellTemplate.Setters>
+
+                            <!-- CELL TIMER UP -->
+                            <skia:SKMultiTrigger Duration="3">
+                                <skia:SKMultiTrigger.Conditions>
+                                    <skia:SKCondition Binding="{Binding IsRowHighlight}" Operator="Equals" Value="False"/>
+                                    <skia:SKCondition Binding="{Binding IsTimerHighlight}" Operator="Equals" Value="True"/>
+                                    <skia:SKCondition BindingPath="Change" Operator="GreaterThan" Value="0"/>
+                                </skia:SKMultiTrigger.Conditions>
+                                <skia:SKMultiTrigger.Setters>
+                                    <skia:SKSetter Property="Background" Value="#0A3A0A"/>
+                                    <skia:SKSetter Property="BorderColor" Value="#1ED760"/>
+                                </skia:SKMultiTrigger.Setters>
+                            </skia:SKMultiTrigger>
+
+                            <!-- CELL TIMER DOWN -->
+                            <skia:SKMultiTrigger Duration="3">
+                                <skia:SKMultiTrigger.Conditions>
+                                    <skia:SKCondition Binding="{Binding IsRowHighlight}" Operator="Equals" Value="False"/>
+                                    <skia:SKCondition Binding="{Binding IsTimerHighlight}" Operator="Equals" Value="True"/>
+                                    <skia:SKCondition BindingPath="Change" Operator="LessThan" Value="0"/>
+                                </skia:SKMultiTrigger.Conditions>
+                                <skia:SKMultiTrigger.Setters>
+                                    <skia:SKSetter Property="Background" Value="#3A0A0A"/>
+                                    <skia:SKSetter Property="BorderColor" Value="#FF4444"/>
+                                </skia:SKMultiTrigger.Setters>
+                            </skia:SKMultiTrigger>
+
+                            <!-- CELL PERSISTENT UP -->
+                            <skia:SKMultiTrigger>
+                                <skia:SKMultiTrigger.Conditions>
+                                    <skia:SKCondition Binding="{Binding IsRowHighlight}" Operator="Equals" Value="False"/>
+                                    <skia:SKCondition Binding="{Binding IsTimerHighlight}" Operator="Equals" Value="False"/>
+                                    <skia:SKCondition BindingPath="Change" Operator="GreaterThan" Value="0"/>
+                                </skia:SKMultiTrigger.Conditions>
+                                <skia:SKMultiTrigger.Setters>
+                                    <skia:SKSetter Property="Background" Value="#0A3A0A"/>
+                                    <skia:SKSetter Property="BorderColor" Value="#1ED760"/>
+                                </skia:SKMultiTrigger.Setters>
+                            </skia:SKMultiTrigger>
+
+                            <!-- CELL PERSISTENT DOWN -->
+                            <skia:SKMultiTrigger>
+                                <skia:SKMultiTrigger.Conditions>
+                                    <skia:SKCondition Binding="{Binding IsRowHighlight}" Operator="Equals" Value="False"/>
+                                    <skia:SKCondition Binding="{Binding IsTimerHighlight}" Operator="Equals" Value="False"/>
+                                    <skia:SKCondition BindingPath="Change" Operator="LessThan" Value="0"/>
+                                </skia:SKMultiTrigger.Conditions>
+                                <skia:SKMultiTrigger.Setters>
+                                    <skia:SKSetter Property="Background" Value="#3A0A0A"/>
+                                    <skia:SKSetter Property="BorderColor" Value="#FF4444"/>
+                                </skia:SKMultiTrigger.Setters>
+                            </skia:SKMultiTrigger>
+
+                        </skia:SKCellTemplate>
+                    </skia:SKGridViewColumn.CellTemplate>
+                </skia:SKGridViewColumn>
+
+                <skia:SKGridViewColumn Header="Chg%" BindingPath="ChangePct" Width="80" ContentAlignment="Right" Format="N2">
+                    <skia:SKGridViewColumn.CellTemplate>
+                        <skia:SKCellTemplate>
+                            <skia:SKCellTemplate.Setters>
+                                <skia:SKSetter Property="Foreground" ValuePath="ChangeColor"/>
+                            </skia:SKCellTemplate.Setters>
+                        </skia:SKCellTemplate>
+                    </skia:SKGridViewColumn.CellTemplate>
+                </skia:SKGridViewColumn>
+                <skia:SKGridViewColumn Header="Bid" BindingPath="Bid" Width="80" ContentAlignment="Right" Format="N2"/>
+                <skia:SKGridViewColumn Header="Ask" BindingPath="Ask" Width="80" ContentAlignment="Right" Format="N2"/>
+                <skia:SKGridViewColumn Header="BidSz" BindingPath="BidSize" Width="70" ContentAlignment="Right" Format="N0"/>
+                <skia:SKGridViewColumn Header="AskSz" BindingPath="AskSize" Width="70" ContentAlignment="Right" Format="N0"/>
+                <skia:SKGridViewColumn Header="High" BindingPath="High" Width="80" ContentAlignment="Right" Format="N2"/>
+                <skia:SKGridViewColumn Header="Low" BindingPath="Low" Width="80" ContentAlignment="Right" Format="N2"/>
+                <skia:SKGridViewColumn Header="Volume" BindingPath="Volume" Width="100" ContentAlignment="Right" FormatWithAcronym="True"/>
+                <skia:SKGridViewColumn Header="Sector" BindingPath="Sector" Width="100" ContentAlignment="Left"/>
+                <skia:SKGridViewColumn Header="Exchange" BindingPath="Exchange" Width="80" ContentAlignment="Center"/>
+            </skia:SkiaGridViewV2.Columns>
+        </skia:SkiaGridViewV2>
+    </Grid>
+</UserControl>

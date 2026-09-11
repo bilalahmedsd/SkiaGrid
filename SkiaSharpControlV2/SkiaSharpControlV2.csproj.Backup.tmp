@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
+
+    <!-- NuGet Package -->
+    <PackageId>SkiaSharpControlV2</PackageId>
+    <Version>2.1.0</Version>
+    <Authors>Bilal Siddiqui</Authors>
+    <Description>High-performance WPF data grid built on SkiaSharp. Sub-5ms rendering for trading applications with grouping, filtering, sorting, conditional styling, timer-based highlighting, ICommand/MVVM support, and UI Automation.</Description>
+    <PackageTags>WPF;DataGrid;SkiaSharp;Trading;HighPerformance;MVVM</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/bilalsiddiqui/SkiaGrids</PackageProjectUrl>
+    <RepositoryType>git</RepositoryType>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+    <!-- Assembly versioning -->
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <FileVersion>2.0.0.0</FileVersion>
+    <InformationalVersion>2.0.0</InformationalVersion>
+
+    <!-- Release notes -->
+    <PackageReleaseNotes>
+v2.0.0 — Major release:
+- Freezable-based model classes (BindingProxy eliminated)
+- ChildProperty DP (ITreeItem removed)
+- Dot-notation BindingPath (Order.Detail.Price)
+- ICommand support (grid + SkButton)
+- Typed Filter API (AddValueFilter/AddTextFilter/AddListFilter)
+- SelectionStyle (Fill/Border)
+- Timer-based trigger improvements (auto-infer, ConcurrentDictionary, per-frame cache)
+- UI Automation peers (IGridProvider, IValueProvider, ISelectionProvider, IScrollProvider)
+- Row operations via source collection (Move/Replace handlers)
+- 6-step style cascade BorderColor fixes
+- 297 unit tests
+    </PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp.Views.WPF" Version="3.116.1" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.2" />
+  </ItemGroup>
+
+
+</Project>

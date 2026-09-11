@@ -1,0 +1,11 @@
+﻿<UserControl x:Class="WpfApp1.UserControls.TextBoxContainer"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:WpfApp1.UserControls"
+             mc:Ignorable="d" Background="Transparent" MinWidth="50" MinHeight="18" Height="{Binding Height}" Width="{Binding Width}">
+    <Grid FocusManager.FocusedElement="{Binding ElementName=tb, Mode=OneTime}">
+        <TextBox x:Name="tb" Background="Black" Foreground="White" Text="{Binding TextContent, UpdateSourceTrigger=PropertyChanged}" />
+    </Grid>
+</UserControl>
